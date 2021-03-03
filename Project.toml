@@ -1,0 +1,13 @@
+name = "MinkowskiReduction"
+uuid = "d617d09d-b3c0-43f1-8886-30d89b900f25"
+authors = ["Gus Hart"]
+version = "0.1.0"
+
+[compat]
+julia = "1.5"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
