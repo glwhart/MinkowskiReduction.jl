@@ -25,7 +25,7 @@ function minkReduce(U, V, W, debug=false)
         p = sortperm(norms)
         U,V,W = (U,V,W)[p] # sort into ascending order
         U,V,W = shortenW_in_UVW(U, V, W)
-        i > 10 && error("minkReduce: Too many iterations") 
+        i > 15 && error("minkReduce: Too many iterations") 
         println(U,V,W,i,"det",det(hcat(U,V,W)))
         norm(W) ≥ norm(V) && break
     end
@@ -103,9 +103,7 @@ Compute the orthogonality defect of three basis vectors.
 # Examples
 ```jldoctest
 julia> orthogonalityDefect([1,1,0],[1,0,1],[0,1,1])
-2×2 Array{Int64,2}:
- 3   8
- 7  19
+1.4142135623730954
 ```
 """
 function orthogonalityDefect(a,b,c)
@@ -156,14 +154,14 @@ end
 
 """
     FibonacciMat(k)
-Generate a 2x2 matrix of the form [f2 f3; f1 f2] where f1, f2, f3 consecutive Fibonacci-like
+Generate a 2x2 matrix of the form [f2 f3; f1 f2] where f1, f2, f3 are consecutive Fibonacci-like numbers
 
 See also: `RandUnimodMat(n)`, `FibonacciMat(n)`, `DeviousMat(n)`
 
 """
 function FibonacciMat(k)
-    f1 = round(Int32,1.61803398875^k/sqrt(5))
-    f2 = round(Int32,1.61803398875^(k+1)/sqrt(5))
+    f1 = round(Int64,1.61803398875^k/sqrt(5))
+    f2 = round(Int64,1.61803398875^(k+1)/sqrt(5))
     f3 = f1 + f2
     any(i -> i < 1, [f1 f2 f3]) && error("Overflow in FibonacciMat function")
     return [f2 f3; f1 f2]
