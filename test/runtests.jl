@@ -1,5 +1,6 @@
 using MinkowskiReduction
 using Test
+using LinearAlgebra
 
 @testset "MinkowskiReduction.jl" begin
     U=[1, 2, 3];V=[-1, 2, 3];W=[3, 0, 4]
