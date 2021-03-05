@@ -9,7 +9,7 @@
 Reduces a basis for a three-dimensional lattice to the basis with the shortest possible basis vectors. Equivalently, the code finds the basis that is as close to orthogonal as possible. This is knows as Minkowski reduction. Lattice reduction is NP-complete in d > 4 dimensions, but a polynomial time algorithm that is guaranteed to find to correct solution exists in three and 4 dimensions. This 3D implementation was inspired by the work of [Phong Nguyen and Damien Stehlé, "Low-Dimensional Lattice Basis Reduction Revisited
 "](https://link.springer.com/chapter/10.1007/978-3-540-24847-7_26)
 
-#Example
+# Example
 ```
 julia> bigM = DeviousMat(26) # Matrix whose columns are an extremely skew basis for the lattice of integers
 3×3 Array{Int64,2}:
