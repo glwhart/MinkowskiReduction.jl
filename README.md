@@ -5,3 +5,24 @@
 [![Build Status](https://github.com/glwhart/MinkowskiReduction.jl/workflows/CI/badge.svg)](https://github.com/glwhart/MinkowskiReduction.jl/actions)
 [![Build Status](https://travis-ci.com/glwhart/MinkowskiReduction.jl.svg?branch=master)](https://travis-ci.com/glwhart/MinkowskiReduction.jl)
 [![Coverage](https://coveralls.io/repos/github/glwhart/MinkowskiReduction.jl/badge.svg?branch=master)](https://coveralls.io/github/glwhart/MinkowskiReduction.jl?branch=master)
+
+Reduces a basis for a three-dimensional lattice to the basis with the shortest possible basis vectors. Equivalently, the code finds the basis that is as close to orthogonal as possible. This is knows as Minkowski reduction. Lattice reduction is NP-complete in d > 4 dimensions, but a polynomial time algorithm that is guaranteed to find to correct solution exists in three and 4 dimensions. This 3D implementation was inspired by the work of [Phong Nguyen and Damien Stehlé, "Low-Dimensional Lattice Basis Reduction Revisited
+"](https://link.springer.com/chapter/10.1007/978-3-540-24847-7_26)
+
+# Example
+```
+julia> bigM = DeviousMat(26) # Matrix whose columns are an extremely skew basis for the lattice of integers
+3×3 Array{Int64,2}:
+  292755045568446  -214311567528244   292755045568445
+ -214311567528244   156886956080403  -214311567528244
+  292755045568445  -214311567528244   292755045568446
+  
+julia> U,V,W = mapslices(x->[x], bigM, dims=2) # Grab columns for input to Minkowski reduction routine
+3×1 Array{Array{Int64,1},2}:
+ [292755045568446, -214311567528244, 292755045568445]
+ [-214311567528244, 156886956080403, -214311567528244]
+ [292755045568445, -214311567528244, 292755045568446]
+  
+  julia> minkReduce(U,V,W)
+  ([-1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, -1.0, 0.0])
+  ```
