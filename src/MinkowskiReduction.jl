@@ -4,7 +4,7 @@
 # julia> GaussReduce([5 8], [8 13])
 module MinkowskiReduction
 
-using LinearAlgebra
+using LinearAlgebra, Random
 export GaussReduce, RandUnimodMat, RandLowerTri, minkReduce, DeviousMat, isMinkReduced, orthogonalityDefect
 """
     minkReduce(U, V, W, debug=false)
@@ -13,7 +13,6 @@ Find the shortest equivalent basis of that lattice formed by {`U`, `V`, `W`}
 
 ```jldoctest
 julia> U = [1, 2, 3]; V = [-1, 2, 3]; W = [3, 0, 4]; minkReduce(U,V,W)
-[1.0 2.0 -1.0; 2.0 -2.0 2.0; 3.0 1.0 3.0]
 ([-2.0, 0.0, 0.0], [0.0, -2.0, 1.0], [-1.0, 2.0, 3.0])
 ```
 """
@@ -113,14 +112,6 @@ end
 Generate a random unimodular 2x2 matrix. `n` is a small integer (number of row and column operations).
 
 See also: `RandLowerTri(n)`, `FibonacciMat(n)`, `DeviousMat(n)`
-
-# Examples
-```jldoctest
-julia> RandUnimodMat(5)
-2×2 Array{Int64,2}:
- 3   8
- 7  19
-```
 """
 function RandUnimodMat(n)
     mat = RandLowerTri(1)
@@ -136,14 +127,6 @@ end
 Generate a random 2x2 matrix of the form [1 0; 0 ±n].
 
 See also: `RandUnimodMat(n)`, `FibonacciMat(n)`, `DeviousMat(n)`
-
-# Examples
-```jldoctest
-julia> RandLowerTri(4)
-2×2 Array{Int64,2}:
-  1  0
- -3  1
-```
 """
 function RandLowerTri(n)
     return [1 0; rand(-n:n) 1]
@@ -202,5 +185,5 @@ function isMinkReduced(U,V,W)
     return true
 end
 
-end
+ end
 
