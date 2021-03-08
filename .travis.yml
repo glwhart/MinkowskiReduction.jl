@@ -24,3 +24,6 @@ after_success:
       Pkg.add("Coverage")
       using Coverage
       Coveralls.submit(process_folder())'
+  - julia --project ./docs/make.jl
+
+coveralls: true
