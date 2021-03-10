@@ -37,7 +37,7 @@ jobs:
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-uploadcoveralls@v1
         env:
-          COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
+          COVERALLS_TOKEN: ${{ PREYUigiFLr39WjMqonpFKYGuGs7VySLl }}
   docs:
     name: Documentation
     runs-on: ubuntu-latest
