@@ -3,7 +3,7 @@
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://glwhart.github.io/MinkowskiReduction.jl/stable)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://glwhart.github.io/MinkowskiReduction.jl/dev)
 [![Build Status](https://github.com/glwhart/MinkowskiReduction.jl/workflows/CI/badge.svg)](https://github.com/glwhart/MinkowskiReduction.jl/actions)
-[![Build Status](https://travis-ci.com/glwhart/MinkowskiReduction.jl.svg?branch=master)](https://travis-ci.com/glwhart/MinkowskiReduction.jl)
+[![Build Status](https://travis-ci.com/glwhart/MinkowskiReduction.jl.svg?branch=main)](https://travis-ci.com/glwhart/MinkowskiReduction.jl)
 [![Coverage](https://coveralls.io/repos/github/glwhart/MinkowskiReduction.jl/badge.svg?branch=main)](https://coveralls.io/github/glwhart/MinkowskiReduction.jl?branch=main)
 
 Reduces a basis for a three-dimensional lattice to the basis with the shortest possible basis vectors. Equivalently, the code finds the basis that is as close to orthogonal as possible. This is knows as Minkowski reduction. (In higher dimensions, the famous [LLL lattice reduction](https://en.wikipedia.org/wiki/Lenstra%E2%80%93Lenstra%E2%80%93Lov%C3%A1sz_lattice_basis_reduction_algorithm) is commonly used.) Lattice reduction is NP-complete in d > 4 dimensions, but a polynomial time algorithm that is guaranteed to find to correct solution exists in three and four dimensions. This 3D implementation was inspired by the work of [Phong Nguyen and Damien Stehlé, "Low-Dimensional Lattice Basis Reduction Revisited
