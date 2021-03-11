@@ -19,6 +19,7 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/glwhart/MinkowskiReduction.jl", devbranch = "main",
-    devurl="docs"
+    repo="github.com/glwhart/MinkowskiReduction.jl", 
+    devbranch = "main",
+    devurl="dev"
 )
