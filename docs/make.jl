@@ -21,7 +21,7 @@ makedocs(;
 deploydocs(;
     repo="github.com/glwhart/MinkowskiReduction.jl", 
     devbranch = "main",
-    devurl="dev"
+    devurl="dev",
     target = "build",
     branch = "gh-pages",
     versions = ["stable" => "v^", "v#.#" ]
