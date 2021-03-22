@@ -25,5 +25,8 @@ after_success:
       using Coverage
       Coveralls.submit(process_folder())'
   - julia --project ./docs/make.jl
+  env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
   #- julia -e 'cd(Pkg.dir("MinkowskiReduction")); Pkg.add("Documenter"); ENV["DOCUMENTER_DEBUG"] = "true"; include(joinpath("docs", "make.jl")) 
 coveralls: true
