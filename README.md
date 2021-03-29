@@ -4,10 +4,10 @@
 [![Build Status](https://travis-ci.com/glwhart/MinkowskiReduction.jl.svg?branch=main)](https://travis-ci.com/glwhart/MinkowskiReduction.jl)
 [![Coverage](https://coveralls.io/repos/github/glwhart/MinkowskiReduction.jl/badge.svg?branch=main)](https://coveralls.io/github/glwhart/MinkowskiReduction.jl?branch=main)
 
-Reduces a basis for a three-dimensional lattice to the basis with the shortest possible basis vectors. Equivalently, the code finds the basis that is as close to orthogonal as possible. This is known as Minkowski reduction. (In higher dimensions, the famous [LLL lattice reduction](https://en.wikipedia.org/wiki/Lenstra%E2%80%93Lenstra%E2%80%93Lov%C3%A1sz_lattice_basis_reduction_algorithm) is commonly used.) Lattice reduction is NP-complete in d > 4 dimensions, but a polynomial time algorithm exists for three and four dimensions. This 3D implementation was inspired by the work of [Phong Nguyen and Damien Stehlé, "Low-Dimensional Lattice Basis Reduction Revisited
-"](https://link.springer.com/chapter/10.1007/978-3-540-24847-7_26)
+Reduces a basis for a three-dimensional lattice to the basis with the shortest possible basis vectors. Equivalently, the code finds the basis that is as close to orthogonal as possible. This is known as Minkowski reduction. (See _Geometrie der Zahlen_ Hermann Minkowski 1910). In higher dimensions, the famous [LLL lattice reduction](https://en.wikipedia.org/wiki/Lenstra%E2%80%93Lenstra%E2%80%93Lov%C3%A1sz_lattice_basis_reduction_algorithm) is commonly used. Lattice reduction is NP-complete in d > 4 dimensions, but a polynomial time algorithm exists for three and four dimensions.[Phong Nguyen and Damien Stehlé, "Low-Dimensional Lattice Basis Reduction Revisited
+"](https://link.springer.com/chapter/10.1007/978-3-540-24847-7_26) This implementation for three dimensions was inspired by this work.
 
-This code is useful in Density Functional Theory calculations to convert a crystal structure to a form best suited for accurate calculations.
+This code is useful in Density Functional Theory calculations to convert a crystal structure to a compact basis best suited for accurate calculations. It is also useful for reducing a lattice prior to calculating the pointgroup because the symmetry of a reduced lattice can be found in a fixed (relatively small) number of steps. (See [Pointgroup finder Pointy.jl](https://github.com/glwhart/Pointy.jl)
 
 # Example 1: Reduce a horribly skew basis
 ```
