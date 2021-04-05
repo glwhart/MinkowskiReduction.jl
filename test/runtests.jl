@@ -1,4 +1,4 @@
-using MinkowskiReduction
+#using MinkowskiReduction
 using Test
 using Random
 using LinearAlgebra
@@ -34,4 +34,12 @@ using LinearAlgebra
     @test !(U = -[2,0,0]; V = -[-.9,2,0]; W = [-1,-1,10]; isMinkReduced(U,V,W))
     @test !(U = -[2,0,0]; V = [-.9,2,0]; W = [-1,-1,10]; isMinkReduced(U,V,W))
     @test (U = -[2,0,0]; V = [0,2,0]; W = [-1,-1,10]; isMinkReduced(U,V,W))
+    U = -[2,0,0]; V = [0,2,0]; W=U+V # Linearly dependedent basis
+    @test_throws ErrorException minkReduce(U,V,W)
+    U = -[2.,0,0]; V = [0,2.,0]; W=U+V+[0,0,1e-170]
+    @test_throws ErrorException minkReduce(U,V,W)
+    @test (U = -[2.,0,0]; V = [0,2.,0]; W=U+V+[0,0,1e-150];minkReduce(U,V,W)==
+    ([0.0, 0.0, 1.0e-150], [-2.0, -0.0, -0.0], [0.0, 2.0, 0.0]))
+    U = -[2^63-1,0,0]; V = [0,2^63-1,0]; W=U+V+[0,0,1e-150]; 
+    @test_throws InexactError minkReduce(U,V,W)
 end
