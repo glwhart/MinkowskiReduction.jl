@@ -86,6 +86,7 @@ function GaussReduce(U, V)
         V, U = U, V - round((U⋅V)/(U⋅U))*U
         i += 1
         if norm(U) > norm(V) || norm(U)≈norm(V) break; end
+        isnan(norm(U)) && error("GaussReduce: input vectors were linearly independent") 
         i > 50 && error("GaussReduce: Too many iterations") # failsafe to break out if not converging
     end
     return V, U
