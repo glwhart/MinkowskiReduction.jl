@@ -1,7 +1,3 @@
-# julia> push!(LOAD_PATH, "/Users/hart/projects/julia/symmetry/")
-# julia> using Revise
-# julia> using MinkReduction 
-# julia> GaussReduce([5 8], [8 13])
 module MinkowskiReduction
 
 using LinearAlgebra, Random
@@ -73,7 +69,7 @@ end
 Reduce the basis vectors {`U`, `V`} to the shortest possible basis.
 
 # Examples
-```julia-repl
+```jldoctest
 julia> GaussReduce([5 8], [8 13])
 ([-1.0 0.0], [0.0 -1.0])
 ```
