@@ -9,10 +9,8 @@ jobs: # 'tests' and 'docs' right now
       fail-fast: false
       matrix:
         version:
-          - '1.5'
-          - 'nightly'
-          - '1.6'
-          - '1.7'
+          - '1.5' # minimum? or only version?
+          - 'nightly' 
         os:
           - ubuntu-latest
           - macOS-latest
