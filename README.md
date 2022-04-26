@@ -7,7 +7,7 @@
 Reduces a basis for a three-dimensional lattice to the basis with the shortest possible basis vectors. Equivalently, the code finds the basis that is as close to orthogonal as possible. This is known as Minkowski reduction. (See _Geometrie der Zahlen_ Hermann Minkowski 1910). In higher dimensions, the famous [LLL lattice reduction](https://en.wikipedia.org/wiki/Lenstra%E2%80%93Lenstra%E2%80%93Lov%C3%A1sz_lattice_basis_reduction_algorithm) is commonly used. Lattice reduction is NP-complete in d > 4 dimensions, but a polynomial time algorithm exists for three and four dimensions. (See [Phong Nguyen and Damien Stehlé, "Low-Dimensional Lattice Basis Reduction Revisited
 "](https://link.springer.com/chapter/10.1007/978-3-540-24847-7_26)) The implementation in this repo for three dimensions (and two dimensions) was inspired by this work.
 
-This code is useful in Density Functional Theory calculations to convert a crystal structure to a compact basis best suited for accurate calculations. It is also useful for reducing a lattice prior to calculating the pointgroup because the symmetry of a reduced lattice can be found in a fixed (relatively small) number of steps. (See pointgroup and  spacegroup calculator [Spacey.jl](https://github.com/glwhart/Spacey.jl))
+This code is useful in Density Functional Theory calculations to convert a crystal structure to a compact basis best suited for accurate calculations. It is also useful for reducing a lattice prior to calculating the pointgroup because the symmetry of a reduced lattice can be found in a fixed (relatively small) number of steps. (See pointgroup and spacegroup calculator [Spacey.jl](https://github.com/glwhart/Spacey.jl))
 
 # Example 1: Reduce a horribly skew basis
 ```
