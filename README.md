@@ -2,6 +2,7 @@
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://glwhart.github.io/MinkowskiReduction.jl)
 [![Build Status](https://travis-ci.com/glwhart/MinkowskiReduction.jl.svg?branch=main)](https://travis-ci.com/glwhart/MinkowskiReduction.jl)
+[![Build Status](https://github.com/glwhart/MinkowskiReduction.jl/actions/workflows/TestingCI.yml/badge.svg?branch=main)](https://github.com/glwhart/MinkowskiReduction.jl/actions/workflows/TestingCI.yml)
 [![Coverage](https://coveralls.io/repos/github/glwhart/MinkowskiReduction.jl/badge.svg?branch=main)](https://coveralls.io/github/glwhart/MinkowskiReduction.jl?branch=main)
 
 Reduces a basis for a three-dimensional lattice to the basis with the shortest possible basis vectors. Equivalently, the code finds the basis that is as close to orthogonal as possible. This is known as Minkowski reduction. (See _Geometrie der Zahlen_ Hermann Minkowski 1910). In higher dimensions, the famous [LLL lattice reduction](https://en.wikipedia.org/wiki/Lenstra%E2%80%93Lenstra%E2%80%93Lov%C3%A1sz_lattice_basis_reduction_algorithm) is commonly used. Lattice reduction is NP-complete in d > 4 dimensions, but a polynomial time algorithm exists for three and four dimensions. (See [Phong Nguyen and Damien Stehlé, "Low-Dimensional Lattice Basis Reduction Revisited
