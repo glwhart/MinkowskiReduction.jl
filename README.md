@@ -1,7 +1,6 @@
 # MinkowskiReduction.jl
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://glwhart.github.io/MinkowskiReduction.jl)
-[![Build Status](https://travis-ci.com/glwhart/MinkowskiReduction.jl.svg?branch=main)](https://travis-ci.com/glwhart/MinkowskiReduction.jl)
 [![Build Status](https://github.com/glwhart/MinkowskiReduction.jl/actions/workflows/TestingCI.yml/badge.svg?branch=main)](https://github.com/glwhart/MinkowskiReduction.jl/actions/workflows/TestingCI.yml)
 [![Coverage](https://coveralls.io/repos/github/glwhart/MinkowskiReduction.jl/badge.svg?branch=main)](https://coveralls.io/github/glwhart/MinkowskiReduction.jl?branch=main)
 
