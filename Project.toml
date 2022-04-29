@@ -1,7 +1,7 @@
 name = "MinkowskiReduction"
 uuid = "d617d09d-b3c0-43f1-8886-30d89b900f25"
 authors = ["Gus Hart"]
-version = "1.0.6"
+version = "1.0.0"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
