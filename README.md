@@ -8,7 +8,9 @@ Reduces a basis for a three-dimensional lattice to the basis with the shortest p
 "](https://link.springer.com/chapter/10.1007/978-3-540-24847-7_26)) The implementation in this repo for three dimensions (and two dimensions) was inspired by this work.
 
 This code is useful in Density Functional Theory calculations to convert a crystal structure to a compact basis best suited for accurate calculations. It is also useful for reducing a lattice prior to calculating the pointgroup because the symmetry of a reduced lattice can be found in a fixed (relatively small) number of steps. (See pointgroup and spacegroup calculator [Spacey.jl](https://github.com/glwhart/Spacey.jl))
-# Example 1: Reduce slightly skew simple cubic basis
+
+
+# Example 1: Reduce a slightly skew basis for a simple cubic basis
 Consider a simple cubic lattice. The "natural" basis is just the _standard basis_: (1,0,0), (0,1,0), and (0,0,1) and any equivalent (but skew) basis should reduce to this one. As an example, take this basis: (1,0,0), (0,1,0), and (1,1,1). The first two are orthogonal but the third one is not. Reduce it with the `minkReduce` function.
 ```
 julia> a1 = [1.,0.,0.]
@@ -29,7 +31,7 @@ julia> minkReduce(a1,a2,a3)
 ```
 # Example 3: Reduce a horribly skew basis
 ```
-julia> bigM = DeviousMat(26) # Matrix whose columns are an extremely skew basis for the lattice of integers
+julia> bigM = DeviousMat(26) # Matrix whose columns are an extremely skew basis for a simple cubic lattice
 3×3 Array{Int64,2}:
   292755045568446  -214311567528244   292755045568445
  -214311567528244   156886956080403  -214311567528244
@@ -44,6 +46,8 @@ julia> U,V,W = mapslices(x->[x], bigM, dims=2) # Grab columns for input to Minko
   julia> minkReduce(U,V,W)
   ([-1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, -1.0, 0.0])
   ```
+  The output is the standard basis again (modulo negative signs and ordering).
+
 # Example 4: See how many steps are required to reduce a basis
 ```
 julia> U = [292755045568446, -214311567528244, 292755045568445]; 
@@ -55,4 +59,4 @@ julia> W = [292755045568445, -214311567528244, 292755045568446]
 julia> minkReduce(U,V,W,true)
 ([-1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, -1.0, 0.0], 15)
 ```
-15 step are required for this extreme case.
+15 step are required for this extreme case. 
