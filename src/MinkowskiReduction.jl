@@ -1,4 +1,4 @@
-;module MinkowskiReduction
+module MinkowskiReduction
 
 using LinearAlgebra, Random
 export GaussReduce, RandUnimodMat, RandLowerTri, minkReduce, DeviousMat, isMinkReduced, orthogonalityDefect
