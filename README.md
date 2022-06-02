@@ -43,20 +43,7 @@ julia> U,V,W = mapslices(x->[x], bigM, dims=2) # Grab columns for input to Minko
  [-214311567528244, 156886956080403, -214311567528244]
  [292755045568445, -214311567528244, 292755045568446]
   
-  julia> minkReduce(U,V,W)
-  ([-1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, -1.0, 0.0])
+  julia> u,v,w = minkReduce(U,V,W) # Reduce the basis and store in new variables
+  ([-1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, -1.0, 0.0], 15)
   ```
-  The output is the standard basis again (modulo negative signs and ordering).
-
-# Example 4: See how many steps are required to reduce a basis
-```
-julia> U = [292755045568446, -214311567528244, 292755045568445]; 
-julia> V = [-214311567528244, 156886956080403, -214311567528244];
-julia> W = [292755045568445, -214311567528244, 292755045568446]
-
-# Use an optional argument to trigger the 4th item in the returned tuple
-# to indicate the number of steps required to reduce the lattice
-julia> minkReduce(U,V,W,true)
-([-1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, -1.0, 0.0], 15)
-```
-15 step are required for this extreme case. 
+  The output is the standard basis again (modulo negative signs and ordering). The fourth return value (an integer) is the number of steps required to reduce the basis. In this extreme case, 15 steps are required.

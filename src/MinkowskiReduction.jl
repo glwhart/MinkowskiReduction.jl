@@ -24,7 +24,7 @@ function minkReduce(U, V, W, debug=false)
 #        println(U,V,W,i,"det",det(hcat(U,V,W)))
         norm(W) ≥ norm(V) && break
     end
-    if !debug return U, V, W end
+    #if !debug return U, V, W end
     return U, V, W, i
 end
 
@@ -51,8 +51,8 @@ function shortenW_in_UVW(U,V,W)
     # find multiples of U, V that move T inside the parallelogram formed by U, V 
     # (See notes from Rod Forcade in the support folder.)
     denom = (U⋅U)*(V⋅V)-(U⋅V)^2
-    a = floor(Int, ((U⋅W)*(V⋅V)-(V⋅W)*(U⋅V))/denom)
-    b = floor(Int, ((V⋅W)*(U⋅U)-(U⋅W)*(U⋅V))/denom)
+    a = floor(((U⋅W)*(V⋅V)-(V⋅W)*(U⋅V))/denom)
+    b = floor(((V⋅W)*(U⋅U)-(U⋅W)*(U⋅V))/denom)
     # Find the corner of the U-V cell closest to shifted T and shift T to be closest to origin
     W = W - a*U - b*V # Try the corner in "first quadrant"
 
