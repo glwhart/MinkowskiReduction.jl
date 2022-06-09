@@ -12,7 +12,7 @@ julia> U = [1, 2, 3]; V = [-1, 2, 3]; W = [3, 0, 4]; minkReduce(U,V,W)
 ([-2.0, 0.0, 0.0], [0.0, -2.0, 1.0], [-1.0, 2.0, 3.0])
 ```
 """
-function minkReduce(U, V, W, debug=false)
+function minkReduce(U, V, W)
     i = 0
     while true
         i +=1
