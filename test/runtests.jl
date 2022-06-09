@@ -6,7 +6,7 @@ using LinearAlgebra
 @testset "MinkowskiReduction.jl" begin
     U=[1, 2, 3];V=[-1, 2, 3];W=[3, 0, 4]
     @test all(minkReduce(U,V,W) .≈ ([-2.0, 0.0, 0.0], [0.0, -2.0, 1.0], [-1.0, 2.0, 3.0],2))
-    @test orthogonalityDefect(minkReduce(U,V,W)...)≈1.0458250331675945
+    @test orthogonalityDefect(minkReduce(U,V,W)[1:3]...)≈1.0458250331675945
     @test orthogonalityDefect(U,V,W)==4.375
     fcc = [[1,1,0],[1,0,1],[0,1,1]]
     @test orthogonalityDefect(fcc...)≈1.4142135623730954
