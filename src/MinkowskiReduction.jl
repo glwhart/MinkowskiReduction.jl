@@ -28,6 +28,14 @@ function minkReduce(U, V, W)
     return U, V, W, i
 end
 
+""" minkReduce(M) 
+
+Find the shortest equivalent basis of that lattice formed by the columns of `M`."""
+function minkReduce(M)
+    U,V,W = minkReduce(M[:,1],M[:,2],M[:,3])
+    return hcat(U,V,W)
+end
+
 """
     shortenW_in_UVW
 
