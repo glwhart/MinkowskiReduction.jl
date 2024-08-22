@@ -19,10 +19,8 @@ jobs:
 #      - uses: codecov/codecov-action@v1
 #        with:
 #          file: lcov.info
-      - name: Upload coverage reports to Codecov with GitHub Action
-        uses: codecov/codecov-action@v4.2.0
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
         env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-        
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}        
     
