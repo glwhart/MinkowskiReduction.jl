@@ -141,7 +141,7 @@ end
     FibonacciMat(k)
 Generate a 2x2 matrix of the form [f2 f3; f1 f2] where f1, f2, f3 are consecutive Fibonacci-like numbers
 
-See also: `RandUnimodMat(n)`, `FibonacciMat(n)`, `DeviousMat(n)`
+See also: `RandUnimodMat(n)` and `DeviousMat(n)`
 
 """
 function FibonacciMat(k)
