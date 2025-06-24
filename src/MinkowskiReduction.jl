@@ -22,7 +22,7 @@ function minkReduce(U, V, W)
         U,V,W = shortenW_in_UVW(U, V, W)
         i > 15 && error("minkReduce: Too many iterations") 
 #        println(U,V,W,i,"det",det(hcat(U,V,W)))
-        norm(W) ≥ norm(V) && break
+        norm(W) ≥ norm(V) ≥ norm(U) && break
     end
     #if !debug return U, V, W end
     return U, V, W, i
@@ -49,10 +49,10 @@ number theory, 2004, vol. 3076, pp. 338-357 ISBN 3-540-22156-5)
 function shortenW_in_UVW(U,V,W)
     # If U, V are themselves mink reduced, then the projection of W (shifted by multiples of U,V)
     # that is the closest to the origin, will be contained in the parallelogram 
-    # formed by the new U, V (GLWH Aug 2020. Not sure exactly what I meant here...)
+    # formed by the new U, V
     U, V = GaussReduce(U,V)
     # Project W into the U-V plane, call it T
-    # n̂ is a unit vector ⟂ to U-V plane. Subtract multiples of thi
+    # n̂ is a unit vector ⟂ to U-V plane. Subtract multiples of this
     # from W to move it into the U-V plane. Dot product gives number of multiples. 
     n̂ = (U×V)/norm(U×V)
     T = W - W⋅n̂ * n̂
@@ -190,5 +190,9 @@ function isMinkReduced(U,V,W)
     return true
 end
 
- end
+function isMinkReduced(M)
+    return isMinkReduced(M[:,1],M[:,2],M[:,3])
+end
+
+end
 
