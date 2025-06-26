@@ -51,6 +51,10 @@ using LinearAlgebra
     for i ∈ 1:100
         @test isPermutationMatrix(vcat(shuffle!([[1 0 0],[0 1 0],[0 0 1]])...))
     end
+    for i ∈ 1:100 
+        @test !isPermutationMatrix(vcat(shuffle!([[1 0 1],[0 1 0],[0 0 1]])...))
+        @test !isPermutationMatrix(vcat(shuffle!([[1 0 0],[0 0 0],[0 0 1]])...))
+    end
     A = [-1.7233692904465637e-9 0.0025000286163305314 0.0024999524070139123; 0.0024999730832105326 2.591951474986415e-8 0.0025000013059337757; 0.0024999629647447772 0.002499967442175358 -1.891891458670977e-8]
     for a ∈ logrange(1e-15,1e15,30)
         @test isMinkReduced(minkReduce(A*a))
