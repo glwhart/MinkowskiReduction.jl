@@ -48,6 +48,9 @@ using LinearAlgebra
     hcat([0.0, 0.0, 1.0e-150], [-2.0, -0.0, -0.0], [0.0, 2.0, 0.0]))
     #U = -[2^63-1,0,0]; V = [0,2^63-1,0]; W=U+V+[0,0,1e-150]; 
     #@test_throws InexactError minkReduce(U,V,W) # silently overflows with later versions of julia
+    for i ∈ 1:100
+        @test isPermutationMatrix(vcat(shuffle!([[1 0 0],[0 1 0],[0 0 1]])...))
+    end
     A = [-1.7233692904465637e-9 0.0025000286163305314 0.0024999524070139123; 0.0024999730832105326 2.591951474986415e-8 0.0025000013059337757; 0.0024999629647447772 0.002499967442175358 -1.891891458670977e-8]
     for a ∈ logrange(1e-15,1e15,30)
         @test isMinkReduced(minkReduce(A*a))
@@ -61,6 +64,7 @@ using LinearAlgebra
         for i ∈ 1:100
             noise = (2*rand(3,3).-1)*ε
             @test isMinkReduced(minkReduce(A+noise))
+            @test isMinkReduced(minkReduce(hcat(eachcol(A+noise)...)))
         end
     end
     # Test of noise levesls for BCC
