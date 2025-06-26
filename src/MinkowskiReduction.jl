@@ -1,7 +1,7 @@
 module MinkowskiReduction
 
 using LinearAlgebra, Random
-export GaussReduce, RandUnimodMat, RandLowerTri, minkReduce, DeviousMat, isMinkReduced, orthogonalityDefect
+export GaussReduce, RandUnimodMat2, RandLowerTri, minkReduce, DeviousMat, isMinkReduced, orthogonalityDefect, RandUnimodMat3, isPermutationMatrix
 """
     minkReduce(U, V, W, debug=false)
 
@@ -49,25 +49,26 @@ number theory, 2004, vol. 3076, pp. 338-357 ISBN 3-540-22156-5)
 function shortenW_in_UVW(U,V,W)
     # If U, V are themselves mink reduced, then the projection of W (shifted by multiples of U,V)
     # that is the closest to the origin, will be contained in the parallelogram 
-    # formed by the new U, V
+    # formed by the new U, V. Find the corner of the parallelogram closest to W. Pick the vector from that corner to W as the new W.
     U, V = GaussReduce(U,V)
-    # Project W into the U-V plane, call it T
-    # n̂ is a unit vector ⟂ to U-V plane. Subtract multiples of this
-    # from W to move it into the U-V plane. Dot product gives number of multiples. 
-    n̂ = (U×V)/norm(U×V)
-    T = W - W⋅n̂ * n̂
-    # find multiples of U, V that move T inside the parallelogram formed by U, V 
-    # (See notes from Rod Forcade in the support folder.)
+    # find multiples of U, V that move the projection of W inside the parallelogram formed by U, V 
     denom = (U⋅U)*(V⋅V)-(U⋅V)^2
     a = floor(((U⋅W)*(V⋅V)-(V⋅W)*(U⋅V))/denom)
     b = floor(((V⋅W)*(U⋅U)-(U⋅W)*(U⋅V))/denom)
-    # Find the corner of the U-V cell closest to shifted T and shift T to be closest to origin
     W = W - a*U - b*V # Try the corner in "first quadrant"
 
-    # Now try the other three corners, keep the shortest that is found
-    norm(W) > norm(W - U) && (W = W - U)
-    norm(W) > norm(W - V) && (W = W - V)
-    norm(W) > norm(W - U - V) && (W = W - U - V)
+    # Now find the corner of the parallelogram closest to the projection of W. Pick the vector from that corner to W as the new W.
+    dists = [norm(W), norm(U - W), norm(V - W), norm(U + V - W)]
+    case = argmin(dists)
+    if case == 1 # Case 1 isn't necessary, but makes the logic clear
+        W = W
+    elseif case == 2
+        W = W - U
+    elseif case == 3
+        W = W - V
+    elseif case == 4
+        W = W - U - V
+    end
     return U, V, W
 end
 
@@ -112,13 +113,13 @@ function orthogonalityDefect(a,b,c)
 end
 
 """
-    RandUnimodMat(n)
+    RandUnimodMat2(n)
 
 Generate a random unimodular 2x2 matrix. `n` is a small integer (number of row and column operations).
 
 See also: `RandLowerTri(n)`, `FibonacciMat(n)`, `DeviousMat(n)`
 """
-function RandUnimodMat(n)
+function RandUnimodMat2(n)
     mat = RandLowerTri(1)
     for i ∈ 1:n
         mat = mat*RandLowerTri(1)
@@ -192,6 +193,115 @@ end
 
 function isMinkReduced(M)
     return isMinkReduced(M[:,1],M[:,2],M[:,3])
+end
+
+"""
+    RandUnimodMat3(k=10)
+
+Generate a random `3×3` unimodular matrix (determinant `±1`).
+
+The algorithm starts with the identity matrix and performs `k` random
+integer elementary operations that preserve the determinant:
+
+1. Add an integer multiple of one *row* to another row.
+2. Optionally, add an integer multiple of one *column* to another column.
+
+Because these elementary operations have determinant `1`, the resulting
+matrix is guaranteed to be unimodular.  The optional column operations are
+included only to improve the "randomness" of the output.
+
+`k` controls how many elementary operations are applied (default `10`).
+Larger values of `k` will typically lead to matrices with larger
+(integer-sized) entries.
+
+# Examples
+```jldoctest
+julia> M = RandUnimodMat3()
+3×3 Matrix{Int64}:
+  1   0  -3
+ -5   1  29
+  4   0 -23
+
+julia> det(M)
+1
+```
+"""
+function RandUnimodMat3(k::Integer = 10)
+    k < 1 && error("RandUnimodMat3: k must be positive")
+    M = Matrix{Int64}(I, 3, 3)
+
+    for _ in 1:k
+        # ----- Row shear -----
+        r1, r2 = rand(1:3, 2)
+        while r2 == r1
+            r2 = rand(1:3)
+        end
+        m = rand(-k:k)
+        m == 0 && (m = 1) # ensure a non-zero multiple
+        @inbounds M[r1, :] .+= m .* M[r2, :]
+
+        # ----- (Optional) Column shear -----
+        if rand(Bool)
+            c1, c2 = rand(1:3, 2)
+            while c2 == c1
+                c2 = rand(1:3)
+            end
+            n = rand(-k:k)
+            n == 0 && (n = 1)
+            @inbounds M[:, c1] .+= n .* M[:, c2]
+        end
+    end
+
+    # After the shear operations det(M) is exactly 1.  Randomly flip the sign
+    # of one row to obtain determinant ±1 with equal probability.
+    if rand(Bool)
+        row = rand(1:3)
+        M[row, :] .*= -1
+    end
+    return M
+end
+
+"""
+    isPermutationMatrix(M; atol=√eps()) -> Bool
+
+Return `true` if the 3×3 matrix `M` is a (signed) permutation of the identity,
+i.e. each row and each column contains exactly one entry whose absolute value
+is ≈ 1 and all other entries are ≈ 0.  The optional keyword `atol` sets the
+absolute tolerance used by `isapprox` when comparing entries to 0/1.
+
+A *signed* permutation matrix differs from a permutation matrix only by having
+rows possibly multiplied by –1, so `det(M) = ±1`.
+
+# Examples
+```jldoctest
+julia> isPermutationMatrix(I)
+true
+
+julia> isPermutationMatrix([0 1 0; 0 0 1; 1 0 0])  # a permutation matrix
+true
+
+julia> isPermutationMatrix([0 -1 0; 0 0 1; -1 0 0]) # signed permutation
+true
+```
+"""
+function isPermutationMatrix(M::AbstractMatrix{<:Real}; atol = sqrt(eps()))
+    # Must be 3×3
+    size(M) == (3,3) || return false
+
+    # Check structure: exactly one (≈) ±1 per row/column, rest ≈0
+    for i in 1:3
+        rowvals = M[i, :]
+        colvals = M[:, i]
+        # Identify entries whose |val| ≈ 1
+        ones_in_row = count(i -> isapprox(abs(rowvals[i]), 1; atol=atol), 1:3)
+        zeros_in_row = count(i -> isapprox(rowvals[i], 0; atol=atol), 1:3)
+        ones_in_col = count(i -> isapprox(abs(colvals[i]), 1; atol=atol), 1:3)
+        zeros_in_col = count(i -> isapprox(colvals[i], 0; atol=atol), 1:3)
+        if !(ones_in_row == 1 && zeros_in_row == 2 && ones_in_col == 1 && zeros_in_col == 2)
+            return false
+        end
+    end
+    return true
 end
 
 end
