@@ -98,7 +98,7 @@ function GaussReduce(U, V)
 end
 
 """
-    orthogonalityDefect(a,b,c)
+    orthogonalityDefect(a, b, c)
 
 Compute the orthogonality defect of three basis vectors.
 
@@ -108,8 +108,30 @@ julia> orthogonalityDefect([1,1,0],[1,0,1],[0,1,1])
 1.4142135623730954
 ```
 """
-function orthogonalityDefect(a,b,c)
+function orthogonalityDefect(a, b, c)
     return prod(norm.([a,b,c]))/abs((a×b)⋅c)
+end
+
+"""
+    orthogonalityDefect(M)
+
+Compute the orthogonality defect of the three column vectors of matrix `M`.
+
+# Examples
+```jldoctest
+julia> M = [1 1 0; 1 0 1; 0 1 1]
+3×3 Matrix{Int64}:
+ 1  1  0
+ 1  0  1
+ 0  1  1
+
+julia> orthogonalityDefect(M)
+1.4142135623730954
+```
+"""
+function orthogonalityDefect(M::AbstractMatrix)
+    size(M, 2) == 3 || error("Matrix must have exactly 3 columns")
+    return orthogonalityDefect(M[:, 1], M[:, 2], M[:, 3])
 end
 
 """
