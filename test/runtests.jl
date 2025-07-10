@@ -10,6 +10,9 @@ using LinearAlgebra
     @test orthogonalityDefect(U,V,W)==4.375
     fcc = [[1,1,0],[1,0,1],[0,1,1]]
     @test orthogonalityDefect(fcc...)≈1.4142135623730954
+    @test orthogonalityDefect(hcat(fcc...))≈1.4142135623730954
+    @test orthogonalityDefect(minkReduce(U,V,W)[1:3]...)≈1.0458250331675945
+    @test orthogonalityDefect(hcat([U,V,W]...))==4.375
     m = DeviousMat(26) # Largest size that doesn't overflow
     @test abs(det(hcat(minkReduce(m[:,1],m[:,2],m[:,3])[1:3]...)))==1
     @test all(MinkowskiReduction.shortenW_in_UVW(U,V,W) .≈ ([-2.0, 0.0, 0.0], [1.0, 2.0, 3.0], [0.0, -2.0, 1.0]))
