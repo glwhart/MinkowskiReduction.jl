@@ -3,13 +3,18 @@ module MinkowskiReduction
 using LinearAlgebra, Random
 export GaussReduce, RandUnimodMat2, RandLowerTri, minkReduce, DeviousMat, isMinkReduced, orthogonalityDefect, RandUnimodMat3, isPermutationMatrix
 """
-    minkReduce(U, V, W, debug=false)
+    minkReduce(U, V, W)
 
-Find the shortest equivalent basis of that lattice formed by {`U`, `V`, `W`}
+Find the shortest equivalent basis of the lattice formed by {`U`, `V`, `W`}.
+
+Returns a 4-tuple `(U′, V′, W′, n)`: the reduced basis vectors (with
+`norm(U′) ≤ norm(V′) ≤ norm(W′)`) and the number of outer-loop iterations
+`n` that were required. The reduction is not unique — see `research.md`
+for discussion of sign, permutation, and boundary ambiguities.
 
 ```jldoctest
 julia> U = [1, 2, 3]; V = [-1, 2, 3]; W = [3, 0, 4]; minkReduce(U,V,W)
-([-2.0, 0.0, 0.0], [0.0, -2.0, 1.0], [-1.0, 2.0, 3.0])
+([-2.0, 0.0, 0.0], [0.0, -2.0, 1.0], [-1.0, 2.0, 3.0], 2)
 ```
 """
 function minkReduce(U, V, W)
@@ -20,7 +25,7 @@ function minkReduce(U, V, W)
         p = sortperm(norms)
         U,V,W = (U,V,W)[p] # sort into ascending order
         U,V,W = shortenW_in_UVW(U, V, W)
-        i > 15 && error("minkReduce: Too many iterations") 
+        i > 15 && error("minkReduce: Too many iterations")
 #        println(U,V,W,i,"det",det(hcat(U,V,W)))
         norm(W) ≥ norm(V) ≥ norm(U) && break
     end
@@ -28,30 +33,62 @@ function minkReduce(U, V, W)
     return U, V, W, i
 end
 
-""" minkReduce(M) 
+"""
+    minkReduce(M)
 
-Find the shortest equivalent basis of that lattice formed by the columns of `M`."""
+Find the shortest equivalent basis of the lattice formed by the columns of
+the 3×3 matrix `M`. Returns a 3×3 matrix whose columns are the reduced
+basis vectors, in ascending norm order.
+
+This is a convenience wrapper around [`minkReduce(U,V,W)`](@ref) that takes
+and returns a matrix. The iteration count returned by the three-vector
+form is discarded; call the three-vector form directly if you need it.
+
+# Examples
+```jldoctest
+julia> minkReduce([1 -1 3; 2 2 0; 3 3 4])
+3×3 Matrix{Float64}:
+ -2.0   0.0  -1.0
+  0.0  -2.0   2.0
+  0.0   1.0   3.0
+```
+"""
 function minkReduce(M)
     U,V,W = minkReduce(M[:,1],M[:,2],M[:,3])
     return hcat(U,V,W)
 end
 
 """
-    shortenW_in_UVW
+    shortenW_in_UVW(U, V, W)
 
-Reduce vector W so that it is as close to the origin as possible.
+Shorten `W` by adding integer combinations of `U` and `V` to it, producing
+the lattice vector of the coset `W + ℤU + ℤV` that is closest to the
+origin. This is one inner step of the 3D Minkowski reduction algorithm of
+Nguyen and Stehlé.
 
-Subtract multiples of U and V from W. W will remain in an affine plane, which 
-is parallel to the U-V plane but which passes through the end of the W vector. 
-(See Lecture notes in computer science, ISSN 0302-974, ANTS - VI : algorithmic 
-number theory, 2004, vol. 3076, pp. 338-357 ISBN 3-540-22156-5)
+Returns the 3-tuple `(U′, V′, W′)`, where:
+- `U′, V′` are the Gauss-reduced form of the input `(U, V)` pair (the
+  function calls [`GaussReduce`](@ref) internally; the caller does not
+  need to pre-reduce them),
+- `W′ = W - aU′ - bV′` for integers `a, b` chosen so that `W′` is the
+  shortest vector in that coset.
+
+The geometric picture: after Gauss reduction, the (U′, V′)-parallelogram
+contains the Voronoi cell of the 2D sublattice, so the closest lattice
+point to the projection of `W` onto the U-V plane is one of the four
+parallelogram corners. The function evaluates all four candidates and
+picks the best.
+
+Reference: Nguyen and Stehlé, *Low-Dimensional Lattice Basis Reduction
+Revisited*, in Algorithmic Number Theory — ANTS VI (2004), LNCS 3076,
+pp. 338–357.
 """
 function shortenW_in_UVW(U,V,W)
     # If U, V are themselves mink reduced, then the projection of W (shifted by multiples of U,V)
-    # that is the closest to the origin, will be contained in the parallelogram 
+    # that is the closest to the origin, will be contained in the parallelogram
     # formed by the new U, V. Find the corner of the parallelogram closest to W. Pick the vector from that corner to W as the new W.
     U, V = GaussReduce(U,V)
-    # find multiples of U, V that move the projection of W inside the parallelogram formed by U, V 
+    # find multiples of U, V that move the projection of W inside the parallelogram formed by U, V
     denom = (U⋅U)*(V⋅V)-(U⋅V)^2
     a = floor(((U⋅W)*(V⋅V)-(V⋅W)*(U⋅V))/denom)
     b = floor(((V⋅W)*(U⋅U)-(U⋅W)*(U⋅V))/denom)
@@ -75,7 +112,18 @@ end
 """
     GaussReduce(U, V)
 
-Reduce the basis vectors {`U`, `V`} to the shortest possible basis.
+Reduce the 2D basis vectors {`U`, `V`} to the shortest equivalent basis,
+using the classical Gauss–Lagrange algorithm (iterated Euclidean-style
+reduction).
+
+Returns a 2-tuple of reduced vectors in ascending norm order: if
+`(a, b) = GaussReduce(U, V)` then `norm(a) ≤ norm(b)` (up to floating-
+point tolerance). The pair satisfies the 2D Minkowski conditions
+`norm(a) ≤ norm(b) ≤ norm(b ± a)`.
+
+Throws an error if the input vectors are linearly dependent (parallel),
+which is detected as NaN norms arising from the recursion's division by
+zero.
 
 # Examples
 ```jldoctest
@@ -91,7 +139,9 @@ function GaussReduce(U, V)
         V, U = U, V - round((U⋅V)/(U⋅U))*U
         i += 1
         if norm(U) > norm(V) || norm(U)≈norm(V) break; end
-        isnan(norm(U)) && error("GaussReduce: input vectors were linearly independent") 
+        # NaN norms arise when U and V are (numerically) parallel. This means the input
+        # vectors are linearly *dependent*.
+        isnan(norm(U)) && error("GaussReduce: input vectors are linearly dependent")
         i > 50 && error("GaussReduce: Too many iterations") # failsafe to break out if not converging
     end
     return V, U
@@ -137,9 +187,15 @@ end
 """
     RandUnimodMat2(n)
 
-Generate a random unimodular 2x2 matrix. `n` is a small integer (number of row and column operations).
+Generate a random unimodular (determinant `±1`) 2×2 integer matrix by
+composing `n` random lower-triangular and upper-triangular integer shears.
 
-See also: `RandLowerTri(n)`, `FibonacciMat(n)`, `DeviousMat(n)`
+Larger `n` produces matrices with larger entries and (in combination with
+[`minkReduce`](@ref)) provides stress-test inputs for the 2D Gauss
+reduction.
+
+See also: [`RandLowerTri`](@ref), [`FibonacciMat`](@ref),
+[`DeviousMat`](@ref), [`RandUnimodMat3`](@ref).
 """
 function RandUnimodMat2(n)
     mat = RandLowerTri(1)
@@ -152,9 +208,18 @@ end
 
 """
     RandLowerTri(n)
-Generate a random 2x2 matrix of the form [1 0; 0 ±n].
 
-See also: `RandUnimodMat(n)`, `FibonacciMat(n)`, `DeviousMat(n)`
+Generate a 2×2 lower-triangular integer shear of the form
+
+    [1 0;
+     k 1]
+
+where `k` is drawn uniformly at random from `-n:n`. The result is
+unimodular (determinant = 1) by construction; it is used as a building
+block for [`RandUnimodMat2`](@ref).
+
+See also: [`RandUnimodMat2`](@ref), [`FibonacciMat`](@ref),
+[`DeviousMat`](@ref).
 """
 function RandLowerTri(n)
     return [1 0; rand(-n:n) 1]
@@ -162,10 +227,18 @@ end
 
 """
     FibonacciMat(k)
-Generate a 2x2 matrix of the form [f2 f3; f1 f2] where f1, f2, f3 are consecutive Fibonacci-like numbers
 
-See also: `RandUnimodMat(n)` and `DeviousMat(n)`
+Generate a 2×2 matrix `[f2 f3; f1 f2]` whose entries are three
+consecutive Fibonacci numbers (approximated via the closed-form Binet
+expression with φ = 1.618…). The resulting matrix is unimodular and
+deliberately ill-conditioned: its columns are nearly parallel, which
+makes it a hard stress-test for 2D Gauss reduction.
 
+`k` selects which Fibonacci triple is used; larger `k` gives larger
+entries and more extreme ill-conditioning. The function errors on
+`Int64` overflow, which occurs around `k ≈ 92`.
+
+See also: [`RandUnimodMat2`](@ref), [`DeviousMat`](@ref).
 """
 function FibonacciMat(k)
     f1 = round(Int64,1.61803398875^k/sqrt(5))
@@ -178,10 +251,21 @@ end
 """
     DeviousMat(n)
 
-Make a unimodular 3x3 matrix that requires a large number of steps to reduce
-(See email from Rod Feb 1 2020)
+Generate a unimodular 3×3 integer matrix that is a heavily disguised
+simple-cubic basis and requires a large number of reduction steps to
+recognize as such. It is the hardest known 3D stress test for the
+Nguyen–Stehlé greedy algorithm.
 
-`n` dictates the size of the entries
+The matrix entries grow like the Pisot number `(2+√3)ⁿ`, so the cost of
+reducing it scales linearly with `n`. Because the entries are stored as
+`Int64`, `n` must satisfy `3 ≤ n ≤ 26`; `n = 27` silently overflows.
+`n = 26` is the largest representable instance and requires exactly 15
+outer iterations of [`minkReduce`](@ref) — the value used to set the
+iteration cap in `minkReduce`.
+
+(Construction due to Rod Forcade, private communication, Feb 1 2020.)
+
+See also: [`RandUnimodMat3`](@ref), [`FibonacciMat`](@ref).
 """
 function DeviousMat(n)
     n < 3 && error("for DeviousMat, n > 2")
@@ -192,27 +276,37 @@ function DeviousMat(n)
 end
 
 """
-    isMinkReduced(U,V,W) 
+    isMinkReduced(U,V,W)
 
-Check if the basis {`U`,`V`,`W`} is Minkoswki reduced.
-    
+Check if the basis {`U`,`V`,`W`} is Minkowski reduced.
+
+Each of the 12 defining inequalities is checked up to a floating-point
+tolerance that scales with the largest of ‖U‖, ‖V‖, or ‖W‖.
 """
 function isMinkReduced(U,V,W)
-    if norm(U) > norm(V)+eps() println("Condition 1 failed"); return false end
-    if norm(V) > norm(W)+eps() println("Condition 2 failed"); return false end
-    if norm(V) > norm(U+V)+eps() println("Condition 3 failed"); return false end
-    if norm(V) > norm(U-V)+eps() println("Condition 4 failed"); return false end
-    if norm(W) > norm(U+W)+eps() println("Condition 5 failed"); return false end
-    if norm(W) > norm(U-W)+eps() println("Condition 6 failed"); return false end
-    if norm(W) > norm(V+W)+eps() println("Condition 7 failed"); return false end
-    if norm(W) > norm(V-W)+eps() println("Condition 8 failed"); return false end
-    if norm(W) > norm(U+V+W)+eps() println("Condition 9 failed"); return false end
-    if norm(W) > norm(U-V+W)+eps() println("Condition 10 failed"); return false end
-    if norm(W) > norm(U+V-W)+eps() println("Condition 11 failed"); return false end
-    if norm(W) > norm(U-V-W)+eps() println("Condition 12 failed"); return false end
+    tol = eps(max(norm(U), norm(V), norm(W)))
+    if norm(U) > norm(V)+tol println("Condition 1 failed"); return false end
+    if norm(V) > norm(W)+tol println("Condition 2 failed"); return false end
+    if norm(V) > norm(U+V)+tol println("Condition 3 failed"); return false end
+    if norm(V) > norm(U-V)+tol println("Condition 4 failed"); return false end
+    if norm(W) > norm(U+W)+tol println("Condition 5 failed"); return false end
+    if norm(W) > norm(U-W)+tol println("Condition 6 failed"); return false end
+    if norm(W) > norm(V+W)+tol println("Condition 7 failed"); return false end
+    if norm(W) > norm(V-W)+tol println("Condition 8 failed"); return false end
+    if norm(W) > norm(U+V+W)+tol println("Condition 9 failed"); return false end
+    if norm(W) > norm(U-V+W)+tol println("Condition 10 failed"); return false end
+    if norm(W) > norm(U+V-W)+tol println("Condition 11 failed"); return false end
+    if norm(W) > norm(U-V-W)+tol println("Condition 12 failed"); return false end
     return true
 end
 
+"""
+    isMinkReduced(M)
+
+Check if the basis formed by the columns of the 3×3 matrix `M` is
+Minkowski reduced. Convenience wrapper around
+[`isMinkReduced(U,V,W)`](@ref).
+"""
 function isMinkReduced(M)
     return isMinkReduced(M[:,1],M[:,2],M[:,3])
 end
@@ -327,4 +421,3 @@ function isPermutationMatrix(M::AbstractMatrix{<:Real}; atol = sqrt(eps()))
 end
 
 end
-
