@@ -5,7 +5,10 @@ using LinearAlgebra
 
 @testset "MinkowskiReduction.jl" begin
     U=[1, 2, 3];V=[-1, 2, 3];W=[3, 0, 4]
-    @test all(minkReduce(U,V,W) .≈ ([-2.0, 0.0, 0.0], [0.0, -2.0, 1.0], [-1.0, 2.0, 3.0],2))
+    # minkReduce now returns (U, V, W, P, n); the original test stripped P out of the tuple.
+    let (Ur, Vr, Wr, _, n) = minkReduce(U, V, W)
+        @test all((Ur, Vr, Wr, n) .≈ ([-2.0, 0.0, 0.0], [0.0, -2.0, 1.0], [-1.0, 2.0, 3.0], 2))
+    end
     @test orthogonalityDefect(minkReduce(U,V,W)[1:3]...)≈1.0458250331675945
     @test orthogonalityDefect(U,V,W)==4.375
     fcc = [[1,1,0],[1,0,1],[0,1,1]]
@@ -15,9 +18,26 @@ using LinearAlgebra
     @test orthogonalityDefect(hcat([U,V,W]...))==4.375
     m = DeviousMat(26) # Largest size that doesn't overflow
     @test abs(det(hcat(minkReduce(m[:,1],m[:,2],m[:,3])[1:3]...)))==1
-    @test all(MinkowskiReduction.shortenW_in_UVW(U,V,W) .≈ ([-2.0, 0.0, 0.0], [1.0, 2.0, 3.0], [0.0, -2.0, 1.0]))
-    @test (m = DeviousMat(26); all(minkReduce(m[:,1],m[:,2],m[:,3]) .≈ ([1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, -1.0, 0.0], 15)))
-    @test (m = DeviousMat(20); all(minkReduce(m[:,1],m[:,2],m[:,3]) .≈ ([0.0, 0.0, -1.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], 12)))
+    # shortenW_in_UVW now returns (U, V, W, δP); original test pre-dates P.
+    @test all(MinkowskiReduction.shortenW_in_UVW(U,V,W)[1:3] .≈ ([-2.0, 0.0, 0.0], [1.0, 2.0, 3.0], [0.0, -2.0, 1.0]))
+    # DeviousMat stress tests. The reduced basis is a cubic cell (norms all
+    # 1, |det|=1); the specific sign/permutation depends on rounding
+    # details of Float64 arithmetic, so we assert only the lattice-intrinsic
+    # invariants. `m * P == R` must hold exactly because P is exact integer.
+    let m = DeviousMat(26), (a, b, c, P, n) = minkReduce(m[:,1], m[:,2], m[:,3])
+        @test sort(norm.([a, b, c])) ≈ [1, 1, 1]
+        @test isMinkReduced(a, b, c)
+        @test abs(det(BigInt.(P))) == 1
+        @test m * P == hcat(a, b, c)
+        @test 1 ≤ n ≤ 15
+    end
+    let m = DeviousMat(20), (a, b, c, P, n) = minkReduce(m[:,1], m[:,2], m[:,3])
+        @test sort(norm.([a, b, c])) ≈ [1, 1, 1]
+        @test isMinkReduced(a, b, c)
+        @test abs(det(BigInt.(P))) == 1
+        @test m * P == hcat(a, b, c)
+        @test 1 ≤ n ≤ 15
+    end
     # These next few are not robust, but testing something that depends on the random number generator is difficult
     @test det(MinkowskiReduction.RandLowerTri(35))≈1.0
     @test det(MinkowskiReduction.RandUnimodMat2(4))≈1.0
@@ -45,10 +65,13 @@ using LinearAlgebra
     U = -[2.,0,0]; V = [0,2.,0]; W=U+V+[0,0,1e-170]
     @test_throws ErrorException minkReduce(U,V,W)
     @test_throws ErrorException minkReduce(hcat(U,V,W))
-    @test (U = -[2.,0,0]; V = [0,2.,0]; W=U+V+[0,0,1e-150];minkReduce(U,V,W)==
-    ([0.0, 0.0, 1.0e-150], [-2.0, -0.0, -0.0], [0.0, 2.0, 0.0],2))
-    @test (U = -[2.,0,0]; V = [0,2.,0]; W=U+V+[0,0,1e-150];minkReduce(hcat(U,V,W))==
-    hcat([0.0, 0.0, 1.0e-150], [-2.0, -0.0, -0.0], [0.0, 2.0, 0.0]))
+    @test (U = -[2.,0,0]; V = [0,2.,0]; W=U+V+[0,0,1e-150];
+           let (a,b,c,_,n) = minkReduce(U,V,W)
+               (a,b,c,n) == ([0.0, 0.0, 1.0e-150], [-2.0, -0.0, -0.0], [0.0, 2.0, 0.0], 2)
+           end)
+    @test (U = -[2.,0,0]; V = [0,2.,0]; W=U+V+[0,0,1e-150];
+           minkReduce(hcat(U,V,W))[1] ==
+           hcat([0.0, 0.0, 1.0e-150], [-2.0, -0.0, -0.0], [0.0, 2.0, 0.0]))
     #U = -[2^63-1,0,0]; V = [0,2^63-1,0]; W=U+V+[0,0,1e-150];
     #@test_throws InexactError minkReduce(U,V,W) # silently overflows with later versions of julia
     for i ∈ 1:100
@@ -60,18 +83,18 @@ using LinearAlgebra
     end
     A = [-1.7233692904465637e-9 0.0025000286163305314 0.0024999524070139123; 0.0024999730832105326 2.591951474986415e-8 0.0025000013059337757; 0.0024999629647447772 0.002499967442175358 -1.891891458670977e-8]
     for a ∈ logrange(1e-15,1e15,30)
-        @test isMinkReduced(minkReduce(A*a))
+        @test isMinkReduced(minkReduce(A*a)[1])
     end
     for i ∈ 1:10
-        M = RandUnimodMat3(10)
-        @test isMinkReduced(minkReduce(M*A))
+        M_transform = RandUnimodMat3(10)
+        @test isMinkReduced(minkReduce(M_transform*A)[1])
     end
     A = [0.0 0.5 0.5; 0.5 0.0 0.5; 0.5 0.5 0.0]
     for ε ∈ logrange(1e-5,1e-1,10)
         for i ∈ 1:100
             noise = (2*rand(3,3).-1)*ε
-            @test isMinkReduced(minkReduce(A+noise))
-            @test isMinkReduced(minkReduce(hcat(eachcol(A+noise)...)))
+            @test isMinkReduced(minkReduce(A+noise)[1])
+            @test isMinkReduced(minkReduce(hcat(eachcol(A+noise)...))[1])
         end
     end
     # Test of noise levesls for BCC
@@ -79,7 +102,7 @@ using LinearAlgebra
     for ε ∈ logrange(1e-5,1.1e-1,20)
         for i ∈ 1:100
             noise = (2*rand(3,3).-1)*ε
-            @test isMinkReduced(minkReduce(A+noise))
+            @test isMinkReduced(minkReduce(A+noise)[1])
         end
     end
     # Loop over aspect ratios and noise levels for BCC
@@ -90,7 +113,7 @@ using LinearAlgebra
             A = aspect_ratio*[1.0 1.0 -1.0; 1.0 1.0 1.0; -1.0 1.0 1.0]
             for i ∈ 1:50
                 noise = (2*rand(3,3).-1)*ε
-                @test isMinkReduced(minkReduce(A+noise))
+                @test isMinkReduced(minkReduce(A+noise)[1])
             end
         end
     end
@@ -101,7 +124,7 @@ using LinearAlgebra
             A = aspect_ratio*[0.0 0.5 0.5; 0.5 0.0 0.5; 0.5 0.5 0.0]
             for i ∈ 1:50
                 noise = (2*rand(3,3).-1)*ε
-                @test isMinkReduced(minkReduce(A+noise))
+                @test isMinkReduced(minkReduce(A+noise)[1])
             end
         end
     end
@@ -130,39 +153,52 @@ using LinearAlgebra
             # k would exercise the reducer equally well but introduce
             # spurious cancellation error in the reference det itself.
             M = A * RandUnimodMat3(4)
-            R = minkReduce(M)
+            R, P = minkReduce(M)
             @test isMinkReduced(R)
             @test isapprox(abs(det(R)), abs(det(M)); rtol = 1e-10)
             @test orthogonalityDefect(R) ≤ orthogonalityDefect(M) * (1 + 1e-10)
+            # Transform matrix invariants (added when P was threaded in):
+            # R == M * P, P is integer and unimodular.
+            @test eltype(P) <: Integer
+            @test abs(det(BigInt.(P))) == 1   # exact: det(Float64(P)) loses precision when entries are large
+            @test M * P ≈ R
         end
     end
 
     # --- 2. Idempotence ------------------------------------------------------
-    # Reducing an already-reduced basis must be a no-op.
+    # Reducing an already-reduced basis must be a no-op, and reducing it a
+    # second time must yield the identity transform.
     for i ∈ 1:50
-        B = minkReduce(Float64.(RandUnimodMat3(8)))
-        @test minkReduce(B) ≈ B
+        B, _ = minkReduce(Float64.(RandUnimodMat3(8)))
+        B2, P2 = minkReduce(B)
+        @test B2 ≈ B
+        @test P2 == Matrix{Int}(I, 3, 3)
     end
 
     # --- 3. GaussReduce (currently has no dedicated tests) -------------------
     # 2D Minkowski conditions on output, |det| preservation, idempotence,
-    # and error on linearly dependent input.
+    # error on linearly dependent input, and P-matrix invariants.
     for i ∈ 1:100
         U = rand(-100:100, 2)
         V = rand(-100:100, 2)
         (iszero(U) || iszero(V)) && continue
         d = abs(det(hcat(U, V)))
         d == 0 && continue                   # skip linearly dependent inputs
-        short, long = GaussReduce(U, V)      # GaussReduce returns (shorter, longer)
+        short, long, P = GaussReduce(U, V)   # returns (shorter, longer, 2×2 transform)
         @test norm(short) ≤ norm(long) + sqrt(eps())
         @test norm(long) ≤ norm(long + short) + sqrt(eps())
         @test norm(long) ≤ norm(long - short) + sqrt(eps())
         @test abs(det(hcat(short, long))) ≈ d
+        @test eltype(P) <: Integer
+        @test abs(det(BigInt.(P))) == 1
+        @test hcat(U, V) * P ≈ hcat(short, long)
     end
-    # Idempotence on the docstring example
-    let (a1, b1) = GaussReduce([5, 8], [8, 13])
-        a2, b2 = GaussReduce(a1, b1)
+    # Idempotence on the docstring example; a second call yields the identity
+    # transform since the input is already reduced.
+    let (a1, b1, _) = GaussReduce([5, 8], [8, 13])
+        a2, b2, P2 = GaussReduce(a1, b1)
         @test a2 ≈ a1 && b2 ≈ b1
+        @test P2 == Matrix{Int}(I, 2, 2)
     end
     # Parallel vectors are detected and raise an error
     @test_throws ErrorException GaussReduce([1.0, 0, 0], [2.0, 0, 0])
@@ -174,10 +210,10 @@ using LinearAlgebra
     norm_multiset(M) = sort(norm.(eachcol(M)))
     perms_3 = [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
     for A ∈ seed_bases
-        ref = norm_multiset(minkReduce(A))
+        ref = norm_multiset(minkReduce(A)[1])
         for p ∈ perms_3, s1 ∈ (-1,1), s2 ∈ (-1,1), s3 ∈ (-1,1)
             Ap = A[:, p] .* reshape([s1, s2, s3], 1, 3)
-            @test norm_multiset(minkReduce(Ap)) ≈ ref
+            @test norm_multiset(minkReduce(Ap)[1]) ≈ ref
         end
     end
 
@@ -185,9 +221,9 @@ using LinearAlgebra
     # The algorithm makes only ratio-based decisions, so uniformly scaling
     # the basis must not change how many outer iterations it takes.
     U0, V0, W0 = [1.0, 2, 3], [-1.0, 2, 3], [3.0, 0, 4]
-    _, _, _, n_ref = minkReduce(U0, V0, W0)
+    _, _, _, _, n_ref = minkReduce(U0, V0, W0)
     for α ∈ logrange(1e-8, 1e8, 20)
-        _, _, _, n = minkReduce(α*U0, α*V0, α*W0)
+        _, _, _, _, n = minkReduce(α*U0, α*V0, α*W0)
         @test n == n_ref
     end
 
@@ -246,10 +282,40 @@ using LinearAlgebra
         # the same lattice.
         for i ∈ 1:20
             M = A * RandUnimodMat3(4)
-            R = minkReduce(M)
+            R, P = minkReduce(M)
             @test isMinkReduced(R)
             @test sort(norm.(eachcol(R))) ≈ sort(expected_norms) rtol=1e-10
             @test orthogonalityDefect(R) ≈ expected_defect rtol=1e-10
+            @test M * P ≈ R
+            @test abs(det(BigInt.(P))) == 1   # exact: det(Float64(P)) loses precision when entries are large
         end
+    end
+
+    # ------------------------------------------------------------------------
+    # 7. Transform matrix P — dedicated sanity sweep.
+    # The contract for downstream consumers (e.g. Spacey.jl) is:
+    #   - `R == M * P` exactly (float equality up to Float64 roundoff),
+    #   - `P` is an integer 3×3 matrix with `|det(P)| = 1`,
+    #   - the three-vector form returns the same `P` as the matrix form.
+    # ------------------------------------------------------------------------
+    p_sweep_bases = [Matrix{Float64}(I, 3, 3),
+                     [0.0 0.5 0.5; 0.5 0.0 0.5; 0.5 0.5 0.0],
+                     [-0.5 0.5 0.5; 0.5 -0.5 0.5; 0.5 0.5 -0.5]]
+    for i ∈ 1:100
+        A = p_sweep_bases[rand(1:3)]
+        M = A * RandUnimodMat3(rand(1:8))
+        R, P = minkReduce(M)
+        @test eltype(P) <: Integer
+        @test size(P) == (3, 3)
+        @test abs(det(BigInt.(P))) == 1
+        @test M * P ≈ R
+    end
+    # Three-vector and matrix forms must agree on P.
+    for i ∈ 1:20
+        M = Float64.(RandUnimodMat3(5))
+        U, V, W, P_vec, _ = minkReduce(M[:,1], M[:,2], M[:,3])
+        R_mat, P_mat = minkReduce(M)
+        @test P_vec == P_mat
+        @test hcat(U, V, W) == R_mat
     end
 end

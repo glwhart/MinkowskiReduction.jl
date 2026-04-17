@@ -7,55 +7,87 @@ export GaussReduce, RandUnimodMat2, RandLowerTri, minkReduce, DeviousMat, isMink
 
 Find the shortest equivalent basis of the lattice formed by {`U`, `V`, `W`}.
 
-Returns a 4-tuple `(U′, V′, W′, n)`: the reduced basis vectors (with
-`norm(U′) ≤ norm(V′) ≤ norm(W′)`) and the number of outer-loop iterations
-`n` that were required. The reduction is not unique — see `research.md`
-for discussion of sign, permutation, and boundary ambiguities.
+Returns a 5-tuple `(U′, V′, W′, P, n)`:
+- `U′, V′, W′` are the reduced basis vectors in ascending norm order.
+- `P` is a 3×3 integer unimodular matrix (`|det(P)| = 1`) that records
+  the change of basis: `hcat(U′, V′, W′) == hcat(U, V, W) * P`. This is
+  what downstream code (e.g. spacegroup analysis) needs to transform
+  atomic positions, symmetry operations, or any other quantity expressed
+  in the old basis.
+- `n` is the number of outer-loop iterations that were required.
+
+The reduction is not unique — see `research.md` for discussion of sign,
+permutation, and boundary ambiguities.
 
 ```jldoctest
-julia> U = [1, 2, 3]; V = [-1, 2, 3]; W = [3, 0, 4]; minkReduce(U,V,W)
+julia> U=[1,2,3]; V=[-1,2,3]; W=[3,0,4]; (U′,V′,W′,P,n) = minkReduce(U,V,W);
+
+julia> (U′, V′, W′, n)
 ([-2.0, 0.0, 0.0], [0.0, -2.0, 1.0], [-1.0, 2.0, 3.0], 2)
+
+julia> hcat(U,V,W) * P == hcat(U′, V′, W′)
+true
+
+julia> abs(det(P))
+1
 ```
 """
 function minkReduce(U, V, W)
+    # Promote to Float64 so that intermediate dot products (which would
+    # overflow Int64 for inputs like `DeviousMat(26)`, whose entries are
+    # ~10¹⁴) are computed in floating-point. The transform matrix P is
+    # tracked separately as exact integer, so this does not affect P's
+    # correctness.
+    U, V, W = float(U), float(V), float(W)
+    P = Matrix{Int}(I, 3, 3)
     i = 0
     while true
-        i +=1
+        i += 1
         norms = [norm(U), norm(V), norm(W)]
         p = sortperm(norms)
-        U,V,W = (U,V,W)[p] # sort into ascending order
-        U,V,W = shortenW_in_UVW(U, V, W)
+        U, V, W = (U, V, W)[p]   # sort vectors into ascending norm order
+        P = P[:, p]              #   ...and apply the same permutation to P
+        U, V, W, δP = shortenW_in_UVW(U, V, W)
+        P = P * δP
         i > 15 && error("minkReduce: Too many iterations")
-#        println(U,V,W,i,"det",det(hcat(U,V,W)))
         norm(W) ≥ norm(V) ≥ norm(U) && break
     end
-    #if !debug return U, V, W end
-    return U, V, W, i
+    return U, V, W, P, i
 end
 
 """
     minkReduce(M)
 
-Find the shortest equivalent basis of the lattice formed by the columns of
-the 3×3 matrix `M`. Returns a 3×3 matrix whose columns are the reduced
-basis vectors, in ascending norm order.
+Find the shortest equivalent basis of the lattice formed by the columns
+of the 3×3 matrix `M`.
 
-This is a convenience wrapper around [`minkReduce(U,V,W)`](@ref) that takes
-and returns a matrix. The iteration count returned by the three-vector
-form is discarded; call the three-vector form directly if you need it.
+Returns a 2-tuple `(R, P)`:
+- `R` is a 3×3 matrix whose columns are the reduced basis vectors, in
+  ascending norm order.
+- `P` is a 3×3 integer unimodular matrix satisfying `R == M * P`. Use it
+  to carry any basis-dependent quantity (atomic positions, symmetry
+  operations, etc.) from the old basis into the reduced one.
+
+The iteration count returned by the three-vector form is discarded; call
+the three-vector form directly if you need it.
 
 # Examples
 ```jldoctest
-julia> minkReduce([1 -1 3; 2 2 0; 3 3 4])
+julia> M = [1 -1 3; 2 2 0; 3 3 4]; R, P = minkReduce(M);
+
+julia> R
 3×3 Matrix{Float64}:
  -2.0   0.0  -1.0
   0.0  -2.0   2.0
   0.0   1.0   3.0
+
+julia> M * P == R
+true
 ```
 """
 function minkReduce(M)
-    U,V,W = minkReduce(M[:,1],M[:,2],M[:,3])
-    return hcat(U,V,W)
+    U, V, W, P, _ = minkReduce(M[:,1], M[:,2], M[:,3])
+    return hcat(U, V, W), P
 end
 
 """
@@ -66,12 +98,14 @@ the lattice vector of the coset `W + ℤU + ℤV` that is closest to the
 origin. This is one inner step of the 3D Minkowski reduction algorithm of
 Nguyen and Stehlé.
 
-Returns the 3-tuple `(U′, V′, W′)`, where:
+Returns the 4-tuple `(U′, V′, W′, δP)`, where:
 - `U′, V′` are the Gauss-reduced form of the input `(U, V)` pair (the
   function calls [`GaussReduce`](@ref) internally; the caller does not
   need to pre-reduce them),
 - `W′ = W - aU′ - bV′` for integers `a, b` chosen so that `W′` is the
-  shortest vector in that coset.
+  shortest vector in that coset,
+- `δP` is a 3×3 integer unimodular matrix such that
+  `hcat(U′, V′, W′) == hcat(U, V, W) * δP`.
 
 The geometric picture: after Gauss reduction, the (U′, V′)-parallelogram
 contains the Voronoi cell of the 2D sublattice, so the closest lattice
@@ -83,30 +117,45 @@ Reference: Nguyen and Stehlé, *Low-Dimensional Lattice Basis Reduction
 Revisited*, in Algorithmic Number Theory — ANTS VI (2004), LNCS 3076,
 pp. 338–357.
 """
-function shortenW_in_UVW(U,V,W)
-    # If U, V are themselves mink reduced, then the projection of W (shifted by multiples of U,V)
-    # that is the closest to the origin, will be contained in the parallelogram
-    # formed by the new U, V. Find the corner of the parallelogram closest to W. Pick the vector from that corner to W as the new W.
-    U, V = GaussReduce(U,V)
-    # find multiples of U, V that move the projection of W inside the parallelogram formed by U, V
-    denom = (U⋅U)*(V⋅V)-(U⋅V)^2
-    a = floor(((U⋅W)*(V⋅V)-(V⋅W)*(U⋅V))/denom)
-    b = floor(((V⋅W)*(U⋅U)-(U⋅W)*(U⋅V))/denom)
-    W = W - a*U - b*V # Try the corner in "first quadrant"
+function shortenW_in_UVW(U, V, W)
+    # Gauss-reduce the (U, V) pair. P_G is 2×2 integer with
+    # [U_new V_new] = [U V] * P_G.
+    U, V, P_G = GaussReduce(U, V)
+    # Lift P_G to a 3×3 transform that leaves W unchanged.
+    δP = Matrix{Int}(I, 3, 3)
+    δP[1:2, 1:2] = P_G
 
-    # Now find the corner of the parallelogram closest to the projection of W. Pick the vector from that corner to W as the new W.
+    # Find integer shifts that move the projection of W into the
+    # fundamental parallelogram of the (U, V)-sublattice.
+    denom = (U⋅U)*(V⋅V) - (U⋅V)^2
+    ra = ((U⋅W)*(V⋅V) - (V⋅W)*(U⋅V)) / denom
+    rb = ((V⋅W)*(U⋅U) - (U⋅W)*(U⋅V)) / denom
+    # Non-finite ratios indicate U ∥ V or numerical underflow in `denom` —
+    # i.e. an effectively degenerate 2D sublattice. Raise the same
+    # "linearly dependent" error GaussReduce uses, rather than letting
+    # floor(Int, …) throw an InexactError.
+    (isfinite(ra) && isfinite(rb)) || error("shortenW_in_UVW: U and V are linearly dependent")
+    a = floor(Int, ra)
+    b = floor(Int, rb)
+    W = W - a*U - b*V                                  # move W into the "first quadrant"
+    δP = δP * [1 0 -a; 0 1 -b; 0 0 1]
+
+    # Test the four parallelogram corners and pick the one closest to W.
     dists = [norm(W), norm(U - W), norm(V - W), norm(U + V - W)]
     case = argmin(dists)
-    if case == 1 # Case 1 isn't necessary, but makes the logic clear
-        W = W
-    elseif case == 2
+    if case == 1                                       # corner (0,0): no change
+        # W unchanged; δP unchanged
+    elseif case == 2                                   # corner (1,0): W ← W - U
         W = W - U
-    elseif case == 3
+        δP = δP * [1 0 -1; 0 1 0; 0 0 1]
+    elseif case == 3                                   # corner (0,1): W ← W - V
         W = W - V
-    elseif case == 4
+        δP = δP * [1 0 0; 0 1 -1; 0 0 1]
+    elseif case == 4                                   # corner (1,1): W ← W - U - V
         W = W - U - V
+        δP = δP * [1 0 -1; 0 1 -1; 0 0 1]
     end
-    return U, V, W
+    return U, V, W, δP
 end
 
 """
@@ -116,10 +165,12 @@ Reduce the 2D basis vectors {`U`, `V`} to the shortest equivalent basis,
 using the classical Gauss–Lagrange algorithm (iterated Euclidean-style
 reduction).
 
-Returns a 2-tuple of reduced vectors in ascending norm order: if
-`(a, b) = GaussReduce(U, V)` then `norm(a) ≤ norm(b)` (up to floating-
-point tolerance). The pair satisfies the 2D Minkowski conditions
-`norm(a) ≤ norm(b) ≤ norm(b ± a)`.
+Returns a 3-tuple `(a, b, P)`:
+- `a, b` are the reduced vectors in ascending norm order (`norm(a) ≤
+  norm(b)` up to floating-point tolerance), satisfying the 2D Minkowski
+  conditions `norm(a) ≤ norm(b) ≤ norm(b ± a)`.
+- `P` is a 2×2 integer unimodular matrix recording the change of basis:
+  `hcat(a, b) == hcat(U, V) * P`.
 
 Throws an error if the input vectors are linearly dependent (parallel),
 which is detected as NaN norms arising from the recursion's division by
@@ -127,24 +178,42 @@ zero.
 
 # Examples
 ```jldoctest
-julia> GaussReduce([5 8], [8 13])
-([0.0 -1.0], [-1.0 0.0])
+julia> a, b, P = GaussReduce([5, 8], [8, 13]);
+
+julia> (a, b)
+([0.0, -1.0], [-1.0, 0.0])
+
+julia> hcat([5, 8], [8, 13]) * P == hcat(a, b)
+true
 ```
 """
 function GaussReduce(U, V)
-    maxval = max(abs.(U)...,abs.(V)...)
-    if norm(U) > norm(V) U, V = V, U end
+    # Promote to Float64 to avoid Int64 overflow in intermediate dot
+    # products; P is tracked separately as exact integer.
+    U, V = float(U), float(V)
+    # Track P such that [U_current V_current] = [U_input V_input] * P.
+    P = Matrix{Int}(I, 2, 2)
+    if norm(U) > norm(V)
+        U, V = V, U
+        P = P[:, [2, 1]]
+    end
     i = 0
     while true
-        V, U = U, V - round((U⋅V)/(U⋅U))*U
+        # If U has collapsed to zero (inputs are numerically parallel), the
+        # ratio is 0/0 = NaN or a division by an underflowed dot product.
+        # Catch this before round(Int, …) throws InexactError, so we raise
+        # the same meaningful error as the pre-P-tracking version.
+        ratio = (U⋅V) / (U⋅U)
+        isfinite(ratio) || error("GaussReduce: input vectors are linearly dependent")
+        m = round(Int, ratio)
+        V, U = U, V - m*U                             # V ← old U, U ← old V − m·old U
+        P = P * [-m 1; 1 0]                           # same column op on P
         i += 1
-        if norm(U) > norm(V) || norm(U)≈norm(V) break; end
-        # NaN norms arise when U and V are (numerically) parallel. This means the input
-        # vectors are linearly *dependent*.
-        isnan(norm(U)) && error("GaussReduce: input vectors are linearly dependent")
-        i > 50 && error("GaussReduce: Too many iterations") # failsafe to break out if not converging
+        if norm(U) > norm(V) || norm(U) ≈ norm(V) break end
+        i > 50 && error("GaussReduce: Too many iterations")
     end
-    return V, U
+    # We return (V, U) = (shorter, longer); swap columns of P to match.
+    return V, U, P[:, [2, 1]]
 end
 
 """
