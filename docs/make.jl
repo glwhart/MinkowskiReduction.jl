@@ -12,7 +12,7 @@ DocMeta.setdocmeta!(
 makedocs(;
     modules=[MinkowskiReduction],
     authors="Gus Hart",
-    repo="https://github.com/glwhart/MinkowskiReduction.jl/blob/{commit}{path}#{line}",
+    repo=Documenter.Remotes.GitHub("glwhart", "MinkowskiReduction.jl"),
     sitename="MinkowskiReduction.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
