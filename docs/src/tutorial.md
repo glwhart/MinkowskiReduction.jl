@@ -8,6 +8,10 @@ end
 
 # Tutorial: reducing your first lattice
 
+![2D lattice reduction: the black vectors are an arbitrary basis for the lattice; the red vectors are the reduced basis. Both span exactly the same lattice (blue dots), but the reduced basis is shorter and more orthogonal.](assets/lattice-reduction.svg)
+
+*Image: `Lattice-reduction.svg` by Catslash (Wikimedia Commons, public domain).*
+
 This tutorial takes you from a fresh Julia session to a completed
 Minkowski reduction of a three-dimensional lattice. By the end you will
 have:

@@ -116,6 +116,8 @@ picks the best.
 Reference: Nguyen and Stehlé, *Low-Dimensional Lattice Basis Reduction
 Revisited*, in Algorithmic Number Theory — ANTS VI (2004), LNCS 3076,
 pp. 338–357.
+DOI: <https://doi.org/10.1007/978-3-540-24847-7_26> ·
+preprint: <https://perso.ens-lyon.fr/damien.stehle/downloads/lowdim-final.pdf>
 """
 function shortenW_in_UVW(U, V, W)
     # Gauss-reduce the (U, V) pair. P_G is 2×2 integer with

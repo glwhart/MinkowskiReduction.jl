@@ -16,6 +16,13 @@ The implementation is three nested algorithmic layers.
 
 ## Layer 1: 2D Gauss reduction
 
+![2D lattice reduction: an arbitrary basis (black) and the reduced basis (red) for the same lattice (blue dots).](../assets/lattice-reduction.svg)
+
+*Image: `Lattice-reduction.svg` by Catslash (Wikimedia Commons, public domain).*
+
+For an informal introduction to this step, see the Wikipedia article on
+[lattice reduction](https://en.wikipedia.org/wiki/Lattice_reduction).
+
 [`GaussReduce(U, V)`](@ref) is the classical Gauss–Lagrange algorithm
 — an iterated-Euclidean-style reduction of a pair of lattice vectors.
 The loop body is:
@@ -137,6 +144,8 @@ Niggli, and Selling reduction.
 - Nguyen, P. Q. and Stehlé, D. *Low-Dimensional Lattice Basis
   Reduction Revisited*. Algorithmic Number Theory — ANTS-VI (2004),
   LNCS 3076, pp. 338–357. Springer.
-  [DOI](https://doi.org/10.1007/978-3-540-24847-7_26)
+  [DOI](https://doi.org/10.1007/978-3-540-24847-7_26) ·
+  [author preprint (PDF)](https://perso.ens-lyon.fr/damien.stehle/downloads/lowdim-final.pdf)
 - Extended journal version: *ACM Transactions on Algorithms* 5(4)
   (2009), Article 46.
+  [DOI](https://doi.org/10.1145/1597036.1597050)

@@ -127,8 +127,13 @@ permutation, boundary ambiguities) is irrelevant.
 
 ## Further reading
 
+- [Lattice reduction](https://en.wikipedia.org/wiki/Lattice_reduction)
+  (Wikipedia) — accessible introduction with the 2D Gauss–Lagrange
+  algorithm in pseudocode.
 - Nguyen & Stehlé, *Low-Dimensional Lattice Basis Reduction
-  Revisited*, ANTS-VI 2004 — the algorithm.
+  Revisited*, ANTS-VI 2004 — the algorithm this package implements.
+  [DOI](https://doi.org/10.1007/978-3-540-24847-7_26) ·
+  [author preprint (PDF)](https://perso.ens-lyon.fr/damien.stehle/downloads/lowdim-final.pdf)
 - Minkowski, *Geometrie der Zahlen*, 1910 — the original theory.
 - Ryshkov & Baranovskii, *C-types of n-dimensional lattices and
   5-dimensional primitive parallelohedra* (1976) — the 3D reduction
@@ -136,3 +141,4 @@ permutation, boundary ambiguities) is irrelevant.
 - Nguyen & Stehlé, *An LLL algorithm with quadratic complexity*,
   SIAM J. Computing 2009 — the L² algorithm, relevant for
   higher-dimensional extensions.
+  [DOI](https://doi.org/10.1137/070705702)
