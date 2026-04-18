@@ -20,7 +20,19 @@ makedocs(;
         assets=String[],
     ),
     pages=[
-        "Home" => "index.md",
+        "Home"        => "index.md",
+        "Tutorial"    => "tutorial.md",
+        "How-to"      => "how-to.md",
+        "Reference"   => [
+            "reference/api.md",
+            "reference/conditions.md",
+        ],
+        "Explanation" => [
+            "explanation/algorithm.md",
+            "explanation/non-uniqueness.md",
+            "explanation/precision.md",
+            "explanation/context.md",
+        ],
     ],
     doctest=true,   # explicit: fail the build if any jldoctest example is stale
 )
