@@ -2,6 +2,19 @@ using MinkowskiReduction
 using Test
 using Random
 using LinearAlgebra
+using Documenter: DocMeta, doctest
+
+# Run the jldoctests embedded in docstrings as part of the main test suite,
+# so `Pkg.test()` validates them locally without a separate docs build.
+@testset "Doctests" begin
+    DocMeta.setdocmeta!(
+        MinkowskiReduction,
+        :DocTestSetup,
+        :(using MinkowskiReduction; using LinearAlgebra);
+        recursive=true,
+    )
+    doctest(MinkowskiReduction)
+end
 
 @testset "MinkowskiReduction.jl" begin
     U=[1, 2, 3];V=[-1, 2, 3];W=[3, 0, 4]

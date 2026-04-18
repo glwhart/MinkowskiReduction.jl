@@ -29,7 +29,7 @@ julia> hcat(U,V,W) * P == hcat(U′, V′, W′)
 true
 
 julia> abs(det(P))
-1
+1.0
 ```
 """
 function minkReduce(U, V, W)
@@ -401,14 +401,13 @@ Larger values of `k` will typically lead to matrices with larger
 
 # Examples
 ```jldoctest
-julia> M = RandUnimodMat3()
-3×3 Matrix{Int64}:
-  1   0  -3
- -5   1  29
-  4   0 -23
+julia> M = RandUnimodMat3();
 
-julia> det(M)
-1
+julia> size(M)
+(3, 3)
+
+julia> abs(det(BigInt.(M))) == 1   # exact unimodularity; Float64 det can drift for large entries
+true
 ```
 """
 function RandUnimodMat3(k::Integer = 10)
@@ -459,7 +458,7 @@ rows possibly multiplied by –1, so `det(M) = ±1`.
 
 # Examples
 ```jldoctest
-julia> isPermutationMatrix(I)
+julia> isPermutationMatrix(Matrix(1.0I, 3, 3))
 true
 
 julia> isPermutationMatrix([0 1 0; 0 0 1; 1 0 0])  # a permutation matrix

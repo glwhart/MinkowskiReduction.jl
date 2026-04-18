@@ -1,7 +1,13 @@
 using MinkowskiReduction
 using Documenter
+using LinearAlgebra  # `det` is referenced by several docstring examples
 
-DocMeta.setdocmeta!(MinkowskiReduction, :DocTestSetup, :(using MinkowskiReduction); recursive=true)
+DocMeta.setdocmeta!(
+    MinkowskiReduction,
+    :DocTestSetup,
+    :(using MinkowskiReduction; using LinearAlgebra);
+    recursive=true,
+)
 
 makedocs(;
     modules=[MinkowskiReduction],
@@ -16,6 +22,7 @@ makedocs(;
     pages=[
         "Home" => "index.md",
     ],
+    doctest=true,   # explicit: fail the build if any jldoctest example is stale
 )
 
 deploydocs(;

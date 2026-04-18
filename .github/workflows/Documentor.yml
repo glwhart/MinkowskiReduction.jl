@@ -1,0 +1,48 @@
+name: Documentation
+
+on:
+  push:
+    branches:
+      - main
+    tags: ['*']
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write         # needed for deploy to gh-pages
+      pull-requests: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.11'
+
+      - uses: julia-actions/cache@v2
+
+      - name: Instantiate docs environment
+        run: |
+          julia --project=docs -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path=pwd()))
+            Pkg.instantiate()'
+
+      - name: Run doctests
+        run: |
+          julia --project=docs -e '
+            using Documenter: DocMeta, doctest
+            using MinkowskiReduction
+            using LinearAlgebra
+            DocMeta.setdocmeta!(MinkowskiReduction, :DocTestSetup,
+              :(using MinkowskiReduction; using LinearAlgebra); recursive=true)
+            doctest(MinkowskiReduction)'
+
+      - name: Build and (on main / tags) deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+        run: julia --project=docs docs/make.jl
