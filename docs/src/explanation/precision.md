@@ -52,10 +52,13 @@ input but not the global optimum for this iteration.
 The outer loop corrects this on the next pass, because the sum
 `‖U‖² + ‖V‖² + ‖W‖²` still decreases strictly. Correctness is
 preserved; only the iteration count is affected. This is *why* the
-15-iteration cap exists for an algorithm that provably terminates.
+iteration cap exists for an algorithm that provably terminates.
 Empirical cost of one such off-by-one is ≤ 1 extra iteration per
-occurrence, and the cap is comfortable: `DeviousMat(26)` — the worst
-integer input — converges in exactly 15.
+occurrence. `DeviousMat(26)` — the worst integer input —
+converges in exactly 15 iterations; the cap is set at 29, leaving
+room for a modest accumulation of Float64 corrections on top.
+See [Algorithm → Layer 3](algorithm.md#layer-3-the-outer-loop)
+for the derivation.
 
 ## `round` near half-integers in `GaussReduce` — non-uniqueness
 

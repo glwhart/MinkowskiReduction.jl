@@ -132,10 +132,10 @@ julia> n
 The three-vector form returns five values rather than two: the three
 reduced vectors, the same integer transform `P`, and the **iteration
 count** `n` (the number of outer-loop passes the algorithm took). Short
-counts mean the input was already nearly reduced; counts approaching 15
-mean the input was deeply skewed. See
-[Explanation → Algorithm](explanation/algorithm.md) for why 15 is the
-ceiling.
+counts mean the input was already nearly reduced; counts in the mid-to
+-high teens indicate a deeply-skewed input. A built-in cap stops the
+loop at 29 iterations and raises an error — see
+[Explanation → Algorithm](explanation/algorithm.md) for why that number.
 
 ## Step 4 — a trickier starting basis
 

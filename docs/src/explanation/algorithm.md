@@ -5,7 +5,7 @@ CurrentModule = MinkowskiReduction
 # The algorithm
 
 This package implements the **greedy algorithm of Nguyen and Stehlé**
-(ANTS-VI 2004, LNCS 3076, pp. 338–357) specialised to three dimensions.
+[(ANTS-VI 2004, LNCS 3076, pp. 338–357)](https://doi.org/10.1007/978-3-540-24847-7_26) specialised to three dimensions.
 It is the algorithm of choice for low-dimensional lattice reduction
 because it has quadratic bit-complexity — comparable to Euclid's GCD —
 and is provably optimal in dimensions ≤ 4. (In 5 dimensions and up,
@@ -103,11 +103,21 @@ finitely many steps.
 
 Nguyen and Stehlé show that for integer inputs of bit-size `B` the
 total number of iterations is `O(B)`, giving **quadratic bit
-complexity** (the same order as Euclid's GCD). The empirical worst
-case is exemplified by [`DeviousMat(26)`](@ref), a heavily-disguised
-simple-cubic basis whose reduction requires exactly 15 outer
-iterations. The `error("Too many iterations")` guard in `minkReduce`
-fires at 16 and has never been hit for integer input.
+complexity** (the same order as Euclid's GCD). The empirical constant
+is ≈ 0.3 iterations/bit: [`DeviousMat(26)`](@ref), a heavily-disguised
+simple-cubic basis with entries of ~46 bits, converges in exactly 15
+outer iterations.
+
+The `error("Too many iterations")` guard in `minkReduce` sets the cap
+at 29 (iteration 30 raises). That value is derived from two observations: the Nguyen-Stehlé bound
+gives ≈ 20 iterations for the `Int64` worst case (63 bits × 0.3), and
+`Float64` inputs can accumulate a handful of extra iterations from
+off-by-one `floor` rounding in [`shortenW_in_UVW`](@ref
+MinkowskiReduction.shortenW_in_UVW) — see
+[Precision](precision.md#floor-near-integers-in-shortenW_in_UVW-iterations-not-wrongness).
+Across 50 000 randomised stress trials the worst observed count was
+23; 29 gives ≈ 10 iterations of headroom without letting a genuine
+bug run silently for long.
 
 ## Tracking the transform matrix
 
