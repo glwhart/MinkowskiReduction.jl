@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="640" height="480" version="1.1" viewBox="0 0 640 480" xmlns="http://www.w3.org/2000/svg">
+<g transform="scale(0.1)" stroke-linecap="round">
+
+  <!-- axes -->
+  <g stroke="#777777" stroke-width="10">
+    <line x1="0" y1="3473" x2="6400" y2="3473"/>
+    <line x1="1973" y1="0" x2="1973" y2="4800"/>
+  </g>
+  <!-- origin -->
+  <text x="2000" y="3773" stroke-width="0" fill="#777777" font-size="300">0</text>
+
+
+  <!-- lattice points -->
+  <g stroke="#none" fill="#0000ff">
+    <circle cx="2341" cy="161"  r="25"/>
+    <circle cx="562"  cy="713"  r="25"/>
+    <circle cx="2893" cy="345"  r="25"/>
+    <circle cx="1114" cy="897"  r="25"/>
+    <circle cx="3445" cy="529"  r="25"/>
+    <circle cx="1666" cy="1081" r="25"/>
+    <circle cx="5776" cy="161"  r="25"/>
+    <circle cx="3997" cy="713"  r="25"/>
+    <circle cx="2218" cy="1265" r="25"/>
+    <circle cx="440"  cy="1817" r="25"/>
+    <circle cx="4549" cy="897"  r="25"/>
+    <circle cx="2770" cy="1449" r="25"/>
+    <circle cx="992"  cy="2001" r="25"/>
+    <circle cx="5101" cy="1081" r="25"/>
+    <circle cx="3322" cy="1633" r="25"/>
+    <circle cx="1544" cy="2185" r="25"/>
+    <circle cx="5653" cy="1265" r="25"/>
+    <circle cx="3874" cy="1817" r="25"/>
+    <circle cx="2096" cy="2369" r="25"/>
+    <circle cx="317"  cy="2921" r="25"/>
+    <circle cx="6205" cy="1449" r="25"/>
+    <circle cx="4426" cy="2001" r="25"/>
+    <circle cx="2648" cy="2553" r="25"/>
+    <circle cx="869"  cy="3105" r="25"/>
+    <circle cx="4978" cy="2185" r="25"/>
+    <circle cx="3200" cy="2737" r="25"/>
+    <circle cx="1421" cy="3289" r="25"/>
+    <circle cx="5530" cy="2369" r="25"/>
+    <circle cx="3752" cy="2921" r="25"/>
+    <circle cx="1973" cy="3473" r="25"/>
+    <circle cx="194"  cy="4025" r="25"/>
+    <circle cx="6082" cy="2553" r="25"/>
+    <circle cx="4303" cy="3105" r="25"/>
+    <circle cx="2525" cy="3657" r="25"/>
+    <circle cx="746"  cy="4209" r="25"/>
+    <circle cx="4856" cy="3289" r="25"/>
+    <circle cx="3077" cy="3841" r="25"/>
+    <circle cx="1298" cy="4393" r="25"/>
+    <circle cx="5408" cy="3473" r="25"/>
+    <circle cx="3629" cy="4025" r="25"/>
+    <circle cx="1850" cy="4577" r="25"/>
+    <circle cx="5959" cy="3657" r="25"/>
+    <circle cx="4181" cy="4209" r="25"/>
+    <circle cx="4733" cy="4393" r="25"/>
+    <circle cx="5285" cy="4577" r="25"/>
+  </g>
+
+  <!-- original basis -->
+  <g stroke="#000000" stroke-width="20">
+    <!-- v1 -->
+    <line x1="1973" y1="3473" x2="4922" y2="2209"/>
+    <polygon fill="#000000" stroke="none" points="4851,2199 4880,2267 4978,2185"/>
+    <text x="4978" y="2185" stroke-width="0" fill="#000000" font-size="400">v</text>
+    <text x="5154" y="2245" stroke-width="0" fill="#000000" font-size="240">1</text>
+
+    <!-- v2 -->
+    <line x1="1973" y1="3473" x2="3693" y2="2939"/>
+    <polygon fill="#000000" stroke="none" points="3623,2922 3645,2992 3751,2921"/>
+    <text x="3751" y="2921" stroke-width="0" fill="#000000" font-size="400">v</text>
+    <text x="3927" y="2981" stroke-width="0" fill="#000000" font-size="240">2</text>
+  </g>
+
+  <!-- reduced basis-->
+  <g stroke="#ff0000" stroke-width="20">
+    <!-- u1 -->
+    <line x1="1973" y1="3473" x2="1479" y2="3308"/>
+    <polygon fill="#ff0000" stroke="none" points="1526,3363 1549,3293 1421,3289"/>
+    <text x="1421" y="3189" stroke-width="0" fill="#ff0000" font-size="400">u</text>
+    <text x="1627" y="3249" stroke-width="0" fill="#ff0000" font-size="240">1</text>
+
+    <!-- u2 -->
+    <line x1="1973" y1="3473" x2="2089" y2="2430"/>
+    <polygon fill="#ff0000" stroke="none" points="2045,2487 2119,2495 2096,2369"/>
+    <text x="2096" y="2269" stroke-width="0" fill="#ff0000" font-size="400">u</text>
+    <text x="2322" y="2349" stroke-width="0" fill="#ff0000" font-size="240">2</text>
+  </g>
+</g>
+</svg>
