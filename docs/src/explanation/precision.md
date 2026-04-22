@@ -21,19 +21,18 @@ U, V, W = float(U), float(V), float(W)
 ```
 
 This exists to avoid Int64 overflow in intermediate dot products. For
-inputs like [`DeviousMat(26)`](@ref), whose entries are ~10¹⁴, a naïve
+inputs like [`DeviousMat(26)`](@ref) (used for stringent testing), whose entries are ~10¹⁴, a naïve
 integer dot product `U⋅V` would overflow Int64 (max ≈ 9.2 × 10¹⁸)
 well before the algorithm's first rounding decision. The `Float64`
 representation is exact for integers up to `2⁵³ ≈ 9 × 10¹⁵`, so
 `DeviousMat(26)` is representable without loss; larger inputs lose
-mantissa bits but do not throw.
+mantissa bits but do not throw exceptions.
 
 The transform matrix `P` is tracked in parallel as `Matrix{Int}` and
 is *not* affected by the float promotion — every operation applied to
 the vectors is mirrored as an exact integer column operation on `P`.
 
-## `floor` near integers in `shortenW_in_UVW` — iterations, not
-## wrongness
+## `floor`ing near integers in `shortenW_in_UVW` can increase iteration count but algorithm will still succeed
 
 The projection coefficients
 
@@ -51,7 +50,7 @@ input but not the global optimum for this iteration.
 
 The outer loop corrects this on the next pass, because the sum
 `‖U‖² + ‖V‖² + ‖W‖²` still decreases strictly. Correctness is
-preserved; only the iteration count is affected. This is *why* the
+preserved; only the iteration count is affected. This is why the
 iteration cap exists for an algorithm that provably terminates.
 Empirical cost of one such off-by-one is ≤ 1 extra iteration per
 occurrence. `DeviousMat(26)` — the worst integer input —

@@ -5,7 +5,7 @@ CurrentModule = MinkowskiReduction
 # The algorithm
 
 This package implements the **greedy algorithm of Nguyen and Stehlé**
-[(ANTS-VI 2004, LNCS 3076, pp. 338–357)](https://doi.org/10.1007/978-3-540-24847-7_26) specialised to three dimensions.
+[(ANTS-VI 2004, LNCS 3076, pp. 338–357)](https://doi.org/10.1007/978-3-540-24847-7_26) specialized to three dimensions.
 It is the algorithm of choice for low-dimensional lattice reduction
 because it has quadratic bit-complexity — comparable to Euclid's GCD —
 and is provably optimal in dimensions ≤ 4. (In 5 dimensions and up,
@@ -38,13 +38,15 @@ the 2D Minkowski condition: `‖U‖ ≤ ‖V‖ ≤ ‖V ± U‖`.
 One detail in the termination condition is load-bearing: the loop
 exits on `norm(U) > norm(V) || norm(U) ≈ norm(V)`. The `≈` branch
 looks cosmetic but is essential. When `‖U‖ = ‖V‖` exactly — which
-happens in every symmetric 2D sublattice (cubic, FCC, BCC, hexagonal)
-— the strict `>` is false, the loop body runs, the vectors swap, and
+happens inside the `(U, V)` pair that Gauss-reduction operates on
+whenever the parent 3D lattice is symmetric (cubic, FCC, BCC,
+hexagonal all produce equal-norm 2D pairs at some stage of the outer
+algorithm) — the strict `>` is false, the loop body runs, the vectors swap, and
 the next iteration is the same configuration with labels flipped.
 Without the `≈` clause the algorithm oscillates forever. With it, the
 algorithm accepts exact equality as a valid termination state. The two
 possible outputs at equal norms are both correct Gauss-reduced pairs;
-the choice is one of the non-uniquenesses discussed in
+See
 [Non-uniqueness](non-uniqueness.md).
 
 ## Layer 2: shortening `W` against a 2D sublattice
@@ -53,7 +55,7 @@ the choice is one of the non-uniquenesses discussed in
 is the core 3D step. Given three basis vectors, it:
 
 1. Gauss-reduces the `(U, V)` pair.
-2. Computes the projection coefficients `a, b` that place `W` inside
+2. Computes the projection coefficients `a, b` that place `W`'s projection inside
    the fundamental parallelogram of the `(U, V)` sublattice, and
    subtracts `a·U + b·V` from `W`.
 3. Checks all four corners of that parallelogram — `W`, `W-U`, `W-V`,
@@ -96,7 +98,10 @@ end
 
 The termination argument: each non-trivial iteration strictly
 decreases `‖U‖² + ‖V‖² + ‖W‖²`, which is bounded below by
-`λ₁² + λ₂² + λ₃²` (the squared successive minima of the lattice).
+`λ₁² + λ₂² + λ₃²`, where `λ₁, λ₂, λ₃` are the three **successive
+minima** of the lattice — the lengths of its shortest three linearly
+independent vectors. (See [Context → What Minkowski reduction
+is](context.md#what-minkowski-reduction-is) for the full definition.)
 Since the vectors always lie in the lattice, the sum is discrete in
 the integer case and cannot decrease indefinitely; it converges in
 finitely many steps.
@@ -109,13 +114,13 @@ simple-cubic basis with entries of ~46 bits, converges in exactly 15
 outer iterations.
 
 The `error("Too many iterations")` guard in `minkReduce` sets the cap
-at 29 (iteration 30 raises). That value is derived from two observations: the Nguyen-Stehlé bound
+at 29 (iteration 30 raises the exception). That value is derived from two observations: the Nguyen-Stehlé bound
 gives ≈ 20 iterations for the `Int64` worst case (63 bits × 0.3), and
 `Float64` inputs can accumulate a handful of extra iterations from
 off-by-one `floor` rounding in [`shortenW_in_UVW`](@ref
 MinkowskiReduction.shortenW_in_UVW) — see
 [Precision](precision.md#floor-near-integers-in-shortenW_in_UVW-iterations-not-wrongness).
-Across 50 000 randomised stress trials the worst observed count was
+Across 50 000 randomized stress trials the worst observed count was
 23; 29 gives ≈ 10 iterations of headroom without letting a genuine
 bug run silently for long.
 
@@ -123,7 +128,7 @@ bug run silently for long.
 
 Every operation the algorithm performs on `(U, V, W)` is a **column
 operation** on the 3×3 matrix whose columns are those vectors. The
-operations are all of one of five elementary types:
+operations are one of two elementary types:
 
 - *Permutation* (outer sort step, Gauss swap): rearrange columns.
 - *Integer shear* (Gauss update `V ← V − m·U`, W-shift
@@ -141,7 +146,7 @@ exact integer with `|det(P)| = 1`.
 ## Why greedy?
 
 Three-dimensional lattice reduction is a special case. In general
-dimension, finding the shortest lattice vector (SVP) is NP-hard, so
+dimension *n*, finding the shortest lattice vector (SVP) is NP-hard, so
 polynomial-time algorithms like LLL settle for an approximation.
 Dimensions 2, 3, and 4 are fortunate: the greedy algorithm terminates
 in quadratic time *and* achieves optimality (all three successive

@@ -28,7 +28,7 @@ julia> M * P == R
 true
 ```
 
-`P` is exact integer (`Matrix{Int}`) with `|det(P)| = 1`. See
+`P` is the exact integer (`Matrix{Int}`), with `|det(P)| = 1`, that converts `M` into its reduced form `R`. See
 [Explanation → Algorithm](explanation/algorithm.md) for how it is
 constructed.
 
@@ -55,18 +55,22 @@ julia> X_old = [0.1 0.5; 0.2 0.5; 0.3 0.5]        # columns = atomic positions
 
 julia> R, P = minkReduce(M);
 
-julia> X_new = inv(P) * X_old                     # fractional coords in reduced basis
+julia> X_new = mod.(inv(P) * X_old, 1)            # transform, then wrap into [0, 1)
 3×2 Matrix{Float64}:
- 0.4  1.0
- 0.5  1.0
+ 0.4  0.0
+ 0.5  0.0
  0.3  0.5
-
-julia> M * X_old ≈ R * X_new                      # Cartesian positions unchanged
-true
 ```
 
-`inv(P)` is exact for unimodular matrices and can also be computed as
-`det(P) * adjugate(P)`, but `inv` is fine for small matrices.
+The `mod.(..., 1)` wrap is the standard crystallographic convention:
+fractional coordinates of `1.0` label the same lattice site as `0.0`,
+so both atom 2's transformed components of `1.0` collapse to `0.0`.
+`X_old` and `X_new` describe the same physical atomic positions,
+expressed in different bases.
+
+`inv(P)` is exact for unimodular matrices — its entries are always
+integers, recoverable as typed integers via `round.(Int, inv(P))` if
+you need them that way.
 
 ---
 
@@ -99,7 +103,7 @@ julia> orthogonalityDefect([1.0 1 0; 1 0 1; 0 1 1])   # FCC conventional basis
 
 The defect is the ratio `‖a‖·‖b‖·‖c‖ / |det|`. It equals 1 exactly for
 an orthogonal basis and grows without bound as the basis becomes more
-skewed. A Minkowski-reduced basis minimises this quantity over all
+skewed. A Minkowski-reduced basis minimizes this quantity over all
 bases of the lattice.
 
 ---
@@ -131,7 +135,7 @@ reduction is the engine behind `minkReduce`.
 ## How do I verify `P` is unimodular exactly?
 
 For a small `P` with entries of magnitude ~1, `abs(det(P)) ≈ 1` via
-Float64 is exact. For large `P` (e.g. when reducing a heavily skewed
+Float64 is exact. This will be the case for most materials science problems. For pathological `P` (e.g. when reducing a heavily skewed
 cell — see [`DeviousMat`](@ref)), Float64's `det` loses precision and
 can return a number far from `1.0` even though the true value is
 exactly `1`. Use `BigInt` for an exact check:
@@ -144,7 +148,7 @@ julia> R, P = minkReduce(M);
 julia> abs(det(BigInt.(P))) == 1
 true
 ```
-
+This should never be needed for typical cases. Pathological cases like this are helpful to make the algorithm robust.
 See [Explanation → Precision](explanation/precision.md#det-P-loses-precision-in-Float64)
 for why this matters.
 
@@ -161,7 +165,7 @@ Three utilities ship with the package:
   larger `n` silently overflows `Int64`.
 - `FibonacciMat(k)` (unexported) — an ill-conditioned 2D matrix with
   consecutive Fibonacci numbers as entries. Overflows around
-  `k ≈ 92`.
+  `k ≈ 92`. Used in some unit tests.
 
 ```jldoctest howto
 julia> M = RandUnimodMat3(5);
@@ -198,3 +202,5 @@ In practice this fires when the input is mathematically degenerate **or
 numerically indistinguishable from degenerate** — e.g. when `W` lies
 within ~10⁻¹⁷⁰ of the U-V plane (for unit-scale vectors). Slightly
 larger perturbations like `1e-150` are handled correctly.
+
+If this error triggers, it most likely means the input is bad (vectors are linearly dependent and don't define a basis), not that finite precision or a bug caused the error. The user should check the input.

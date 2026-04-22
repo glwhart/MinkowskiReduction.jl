@@ -8,17 +8,15 @@ Minkowski reduction does **not** produce a unique reduced basis. This
 is not a bug in the algorithm; it is a property of the definition.
 Any algorithm that produces a Minkowski-reduced basis — this one
 included — will sometimes return different-looking results for the
-same physical lattice. If you need a canonical form (e.g. to compare
-two lattices for equivalence) you must add normalisation on top, not
-wait for the reducer to deliver it.
+same physical lattice. This package does not provide canonical forms that you would see in spacegroup tables or a crystallography handbook. For those needs, see [FINDSYM](https://iso.byu.edu/findsym.php).
 
 Three distinct sources of ambiguity coexist in 3D.
 
 ## 1. Sign ambiguity (8-fold)
 
 Any sign flip of any basis vector produces another valid reduced
-basis: if `(U, V, W)` is reduced, so is `(±U, ±V, ±W)`. That is
-eight different reduced triples that span the same lattice. The
+basis: if `(U, V, W)` is reduced, so is `(±U, ±V, ±W)`. That is,
+eight different reduced triples define the same lattice. The
 algorithm makes no deliberate choice about signs; the output signs
 depend on arithmetic detail and the input.
 
@@ -49,9 +47,11 @@ alternative that produces the equality.
 
 For example, if `‖W‖ = ‖U + V + W‖`, then `W` and `U + V + W` are
 both "shortest W for this coset" — each gives a valid reduced basis.
-These equality cases form the *boundaries* of the fundamental
-polyhedral domain of Minkowski reduction in the space of
-positive-definite matrices.
+These equality cases mark the boundaries between regions of
+configuration space where different reduced bases are canonical. On
+the interior of a region (all twelve inequalities strict) the reduced
+basis is unique up to sign; on a boundary, two or more choices are
+simultaneously valid.
 
 ## What is unique?
 

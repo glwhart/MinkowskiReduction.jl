@@ -9,12 +9,11 @@ end
 # MinkowskiReduction.jl
 
 A Julia package for Minkowski reduction of three-dimensional lattice
-bases. Given any basis for a 3D lattice, `minkReduce` returns the
+bases (or Gauss reduction of a two-dimensional lattice). Given any basis for a 3D lattice, `minkReduce` returns the
 basis with the shortest possible vectors — equivalently, the basis
 closest to orthogonal.
 
-Used in crystallography and density-functional-theory calculations to
-normalise a crystal's unit cell before further analysis (e.g.
+Minkowski reduction is useful in crystallography and density-functional-theory calculations to put a crystal's unit cell into a canonical form before further analysis (e.g.
 [Spacey.jl](https://github.com/glwhart/Spacey.jl) uses it as the
 first step of spacegroup detection).
 
@@ -35,7 +34,7 @@ julia> R                         # reduced basis (orthonormal)
  0.0  1.0  0.0
  0.0  0.0  1.0
 
-julia> M * P == R                # P is the exact integer transform
+julia> M * P == R                # P is the exact integer transform taking the original basis to the reduced one
 true
 ```
 
@@ -43,24 +42,23 @@ true
 
 This documentation follows the
 [Diátaxis](https://diataxis.fr/) framework. Four kinds of pages serve
-four different needs:
+four different kinds of user:
 
-- **[Tutorial](tutorial.md)** — *learning*. A single guided walk-through
-  that takes you from installation to a working reduction. Start here
+- **[Tutorial](tutorial.md)** — *learning*. A guided walk-through
+  that takes you from installation to reducing a lattice. Start here
   if you're new.
 
 - **[How-to guides](how-to.md)** — *getting things done*. Short recipes
-  for specific tasks: transform atomic positions, check reducedness,
-  reduce a 2D sublattice, etc. Use these when you know what you want
+  for specific tasks: reduce a lattice basis (3D `minkReduce` and 2D `GaussReduce`), check the orthogonality defect of a lattice `orthogonalityDefect`, check if a lattice basis is already reduced `isMinkReduced`, etc. Use these when you know what you want
   to do.
 
-- **Reference** — *looking things up*.
+- **Reference** — *looking things up*. Use this if you just need to know how to call a function.
   - [API reference](reference/api.md) — every exported name, with full
     signatures.
   - [The 12 Minkowski conditions](reference/conditions.md) — the
-    mathematical contract that defines reducedness.
+    mathematical contract that defines Minkowski reduction (shortest basis vectors, most orthogonal basis).
 
-- **Explanation** — *understanding*.
+- **Explanation** — *understanding*. The math and logic behind the algorithm.
   - [The algorithm](explanation/algorithm.md) — how `minkReduce`
     actually works (the Nguyen–Stehlé greedy algorithm).
   - [Non-uniqueness](explanation/non-uniqueness.md) — why the same

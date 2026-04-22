@@ -6,12 +6,13 @@ DocTestSetup = quote
 end
 ```
 
-# Tutorial: reducing your first lattice
+
 
 ![2D lattice reduction: the black vectors are an arbitrary basis for the lattice; the red vectors are the reduced basis. Both span exactly the same lattice (blue dots), but the reduced basis is shorter and more orthogonal.](assets/lattice-reduction.svg)
 
-*Image: `Lattice-reduction.svg` by Catslash (Wikimedia Commons, public domain).*
+*Image: `Lattice-reduction.svg` by Catslash (Wikimedia Commons, public domain).* In this picture, the lattice is by integer linear combinations `v1` and `v2`. But these basis vectors are much longer than is necessary. `u1` and `u2` do the job just as well, but are shorter. In fact, they are the shortest possible basis vectors for this lattice.
 
+# Tutorial: reducing your first lattice
 This tutorial takes you from a fresh Julia session to a completed
 Minkowski reduction of a three-dimensional lattice. By the end you will
 have:
@@ -21,7 +22,7 @@ have:
 2. inspected every element of the function's return value,
 3. verified the change-of-basis relationship `R == M * P`,
 4. reduced a non-cubic (hexagonal) lattice,
-5. confirmed the output is Minkowski reduced.
+5. confirmed that the output is, in fact, Minkowski reduced.
 
 This is the only piece of the documentation that is designed to be read
 straight through. For short recipes aimed at particular tasks, see the
@@ -45,7 +46,7 @@ julia> using LinearAlgebra      # for det(), used below
 ## Step 1 — your first reduction
 
 Consider a cubic lattice whose third basis vector has been skewed into
-the body diagonal:
+the body diagonal. In other words, the third basis vector includes the first two basis vectors. (Subtracting them from the third basis vector, makes it shorter without destroying its linear independence.)
 
 ```jldoctest tutorial
 julia> M = [1.0  0.0  1.0;
@@ -57,7 +58,7 @@ julia> M = [1.0  0.0  1.0;
  0.0  0.0  1.0
 ```
 
-The columns are three basis vectors; together they span exactly the
+The columns of `M` are the three basis vectors defining the lattice; together they span exactly the
 same lattice as the orthonormal basis `(e₁, e₂, e₃)`. Reduce it:
 
 ```jldoctest tutorial
@@ -114,7 +115,7 @@ julia> abs(det(P))
 
 ## Step 3 — the three-vector form
 
-If your basis is more conveniently expressed as three separate vectors,
+If your basis is stored as three vectors (instead of the columns of a matrix),
 there is an alternative entry point:
 
 ```jldoctest tutorial
@@ -128,39 +129,46 @@ julia> U′, V′, W′
 julia> n
 1
 ```
-
 The three-vector form returns five values rather than two: the three
 reduced vectors, the same integer transform `P`, and the **iteration
 count** `n` (the number of outer-loop passes the algorithm took). Short
 counts mean the input was already nearly reduced; counts in the mid-to
--high teens indicate a deeply-skewed input. A built-in cap stops the
+-high teens indicate a deeply-skewed input. This should never happen with typical inputs and outputs of a DFT code. (A built-in cap stops the
 loop at 29 iterations and raises an error — see
-[Explanation → Algorithm](explanation/algorithm.md) for why that number.
+[Explanation → Algorithm](explanation/algorithm.md) for why that number.)
 
 ## Step 4 — a trickier starting basis
 
 The reduction is unaffected by how skewed the input is, as long as the
-lattice it spans is the same:
+lattice it spans is the same. Here is a horribly skewed basis for the
+same simple cubic lattice — the columns are long integer lattice
+vectors whose nearest-orthonormal form is far from obvious by eye:
 
 ```jldoctest tutorial
-julia> M = [1.0 1.0 1.0;
-            0.0 1.0 1.0;
-            0.0 0.0 1.0];
+julia> M = [292755045568446  -214311567528244   292755045568445;
+           -214311567528244   156886956080403  -214311567528244;
+            292755045568445  -214311567528244   292755045568446];
 
 julia> R, _ = minkReduce(M);
 
 julia> R
 3×3 Matrix{Float64}:
- 1.0  0.0  0.0
- 0.0  1.0  0.0
- 0.0  0.0  1.0
+ 0.0  -1.0   0.0
+ 0.0   0.0  -1.0
+ 1.0   0.0   0.0
 ```
 
-Same lattice, same reduced basis, different starting point.
+Same lattice as the first example; the reduced basis is again simple
+cubic — three orthonormal lattice vectors — but this time the algorithm
+returned them with different signs and axis order. That is not a
+mistake: for any highly-symmetric lattice there are multiple
+Minkowski-reduced bases, and which one you get depends on tiny details
+of the input and of floating-point rounding. This is *non-uniqueness*
+in action; see [Explanation → Non-uniqueness](explanation/non-uniqueness.md).
 
 ## Step 5 — a non-cubic lattice
 
-The tutorial's payoff is that the algorithm handles arbitrary 3D
+Of course, the algorithm handles arbitrary 3D
 lattices, not just cubic ones. Here is a hexagonal basis with lattice
 parameter `a = 1` and `c/a = √(8/3)` (the ideal hcp ratio):
 
