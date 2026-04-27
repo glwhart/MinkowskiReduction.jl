@@ -367,7 +367,10 @@ Each of the 12 defining inequalities is checked up to a floating-point
 tolerance that scales with the largest of ‖U‖, ‖V‖, or ‖W‖.
 """
 function isMinkReduced(U,V,W)
-    tol = eps(max(norm(U), norm(V), norm(W)))
+    # Factor of 8 covers ~6 units-in-the-last-place (ULPs) of accumulated
+    # floating-point error in norm computations after the reduction iterations
+    # (observed worst case on the hexagonal lattice boundary, where ‖V‖ = ‖U±V‖ exactly).
+    tol = 8 * eps(max(norm(U), norm(V), norm(W)))
     if norm(U) > norm(V)+tol println("Condition 1 failed"); return false end
     if norm(V) > norm(W)+tol println("Condition 2 failed"); return false end
     if norm(V) > norm(U+V)+tol println("Condition 3 failed"); return false end
