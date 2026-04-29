@@ -331,4 +331,59 @@ end
         @test P_vec == P_mat
         @test hcat(U, V, W) == R_mat
     end
+
+    # ------------------------------------------------------------------------
+    # 8. Pure random Gaussian inputs.
+    # All other random tests start from a structured Bravais lattice and apply
+    # a `RandUnimodMat3` (|det| = 1) transform — they exercise lattices with a
+    # discrete, integer-valued underlying structure. Unstructured `randn`
+    # inputs cover a different regime: arbitrary determinant, no integer
+    # relationship between input and output, no a-priori bound on aspect
+    # ratio. The reducer's contract still applies: output must satisfy the
+    # 12 Minkowski conditions, |det| must be preserved exactly (the algorithm
+    # only does integer linear combinations), and the integer transform `P`
+    # must satisfy `M * P ≈ R` with `|det(P)| = 1`.
+    #
+    # We use a fixed RNG seed so the test is reproducible across runs but
+    # samples a fresh distribution every release. Rare singular draws are
+    # filtered by determinant magnitude; pathologically high aspect ratios
+    # may hit minkReduce's 15-iteration cap, in which case the call errors
+    # — we count those and require the failure rate to be negligible.
+    # ------------------------------------------------------------------------
+    @testset "Pure random Gaussian inputs" begin
+        rng = MersenneTwister(20260429)
+        n_attempted = 100
+        n_skipped_singular = 0
+        n_iter_cap = 0
+        n_passed = 0
+        for _ ∈ 1:n_attempted
+            M = randn(rng, 3, 3)
+            if abs(det(M)) < 1e-6
+                n_skipped_singular += 1
+                continue
+            end
+            try
+                R, P = minkReduce(M)
+                @test isMinkReduced(R)
+                @test isapprox(abs(det(R)), abs(det(M)); rtol = 1e-8)
+                @test eltype(P) <: Integer
+                @test abs(det(BigInt.(P))) == 1
+                @test M * P ≈ R
+                n_passed += 1
+            catch e
+                # The known failure mode is the 15-iteration cap; surface
+                # anything else as a real bug.
+                if e isa ErrorException && occursin("iter", e.msg)
+                    n_iter_cap += 1
+                else
+                    rethrow(e)
+                end
+            end
+        end
+        # Almost all draws should pass. Singular and iter-cap failures are
+        # both expected to be zero or very small. If the iter-cap rate
+        # creeps up above ~5%, that's a regression worth investigating.
+        @test n_passed ≥ Int(round(0.95 * n_attempted))
+        @test n_iter_cap ≤ Int(round(0.05 * n_attempted))
+    end
 end
