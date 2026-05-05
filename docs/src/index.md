@@ -9,7 +9,7 @@ end
 # MinkowskiReduction.jl
 
 A Julia package for Minkowski reduction of three-dimensional lattice
-bases (or Gauss reduction of a two-dimensional lattice). Given any basis for a 3D lattice, `minkReduce` returns the
+bases (or Gauss reduction of a two-dimensional lattice). Given any basis for a 3D lattice, `mink_reduce` returns the
 basis with the shortest possible vectors — equivalently, the basis
 closest to orthogonal.
 
@@ -26,7 +26,7 @@ julia> M = [1.0  0.0  1.0;
             0.0  1.0  1.0;
             0.0  0.0  1.0];     # a skewed cubic basis
 
-julia> R, P = minkReduce(M);
+julia> R, P = mink_reduce(M);
 
 julia> R                         # reduced basis (orthonormal)
 3×3 Matrix{Float64}:
@@ -49,7 +49,7 @@ four different kinds of user:
   if you're new.
 
 - **[How-to guides](how-to.md)** — *getting things done*. Short recipes
-  for specific tasks: reduce a lattice basis (3D `minkReduce` and 2D `GaussReduce`), check the orthogonality defect of a lattice `orthogonalityDefect`, check if a lattice basis is already reduced `isMinkReduced`, etc. Use these when you know what you want
+  for specific tasks: reduce a lattice basis (3D `mink_reduce` and 2D `gauss_reduce`), check the orthogonality defect of a lattice `orthogonality_defect`, check if a lattice basis is already reduced `is_mink_reduced`, etc. Use these when you know what you want
   to do.
 
 - **Reference** — *looking things up*. Use this if you just need to know how to call a function.
@@ -59,7 +59,7 @@ four different kinds of user:
     mathematical contract that defines Minkowski reduction (shortest basis vectors, most orthogonal basis).
 
 - **Explanation** — *understanding*. The math and logic behind the algorithm.
-  - [The algorithm](explanation/algorithm.md) — how `minkReduce`
+  - [The algorithm](explanation/algorithm.md) — how `mink_reduce`
     actually works (the Nguyen–Stehlé greedy algorithm).
   - [Non-uniqueness](explanation/non-uniqueness.md) — why the same
     lattice can produce different reduced bases.

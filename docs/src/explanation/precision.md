@@ -13,7 +13,7 @@ reducer extreme input, or extending it.
 
 ## Inputs are promoted to `Float64` on entry
 
-`minkReduce` and `GaussReduce` both begin by promoting their input
+`mink_reduce` and `gauss_reduce` both begin by promoting their input
 vectors to `Float64`:
 
 ```julia
@@ -21,18 +21,18 @@ U, V, W = float(U), float(V), float(W)
 ```
 
 This exists to avoid Int64 overflow in intermediate dot products. For
-inputs like [`DeviousMat(26)`](@ref) (used for stringent testing), whose entries are ~10¹⁴, a naïve
+inputs like [`devious_mat(26)`](@ref) (used for stringent testing), whose entries are ~10¹⁴, a naïve
 integer dot product `U⋅V` would overflow Int64 (max ≈ 9.2 × 10¹⁸)
 well before the algorithm's first rounding decision. The `Float64`
 representation is exact for integers up to `2⁵³ ≈ 9 × 10¹⁵`, so
-`DeviousMat(26)` is representable without loss; larger inputs lose
+`devious_mat(26)` is representable without loss; larger inputs lose
 mantissa bits but do not throw exceptions.
 
 The transform matrix `P` is tracked in parallel as `Matrix{Int}` and
 is *not* affected by the float promotion — every operation applied to
 the vectors is mirrored as an exact integer column operation on `P`.
 
-## `floor`ing near integers in `shortenW_in_UVW` can increase iteration count but algorithm will still succeed
+## `floor`ing near integers in `shorten_w_in_uvw` can increase iteration count but algorithm will still succeed
 
 The projection coefficients
 
@@ -53,15 +53,15 @@ The outer loop corrects this on the next pass, because the sum
 preserved; only the iteration count is affected. This is why the
 iteration cap exists for an algorithm that provably terminates.
 Empirical cost of one such off-by-one is ≤ 1 extra iteration per
-occurrence. `DeviousMat(26)` — the worst integer input —
+occurrence. `devious_mat(26)` — the worst integer input —
 converges in exactly 15 iterations; the cap is set at 29, leaving
 room for a modest accumulation of Float64 corrections on top.
 See [Algorithm → Layer 3](algorithm.md#layer-3-the-outer-loop)
 for the derivation.
 
-## `round` near half-integers in `GaussReduce` — non-uniqueness
+## `round` near half-integers in `gauss_reduce` — non-uniqueness
 
-Inside `GaussReduce` the update is
+Inside `gauss_reduce` the update is
 
 ```julia
 m = round(Int, (U⋅V) / (U⋅U))
@@ -89,7 +89,7 @@ at the scale at which numerical linear dependence begins, which in
 practice is around `‖cross‖ / (‖U‖·‖V‖) ≲ 10⁻¹⁷⁰` for unit-scale
 inputs. Perturbations of `1e-150` and above are handled without error.
 
-## Scale-aware tolerance in `isMinkReduced`
+## Scale-aware tolerance in `is_mink_reduced`
 
 Each of the 12 conditions is tested as
 
@@ -107,14 +107,14 @@ a lattice with norms of ~10⁸ (where floating-point error in
 loose for a lattice with norms of ~10⁻⁸.
 
 The test suite exercises aspect ratios from 10⁻⁸ to 10⁸ without
-spurious `isMinkReduced` failures thanks to this scaling.
+spurious `is_mink_reduced` failures thanks to this scaling.
 
 ## `det(P)` loses precision in Float64
 
 Even though `P` is exact integer and `|det(P)| = 1` in every case,
 Julia's `det(::Matrix{Int})` internally promotes to `Float64` via LU
 factorisation and can return a number far from 1 for large `P`. For
-example, the `P` from `minkReduce(DeviousMat(26))` has entries of
+example, the `P` from `mink_reduce(devious_mat(26))` has entries of
 magnitude ~10¹⁴, and `det(P)` evaluates to ~10¹² — not because `P` is
 near-singular, but because the 3×3 determinant involves subtractions
 of terms ~10²⁸ computed in Float64.
@@ -123,7 +123,7 @@ of terms ~10²⁸ computed in Float64.
 test suite uses this pattern and the API reference's how-to guide
 points callers at it.
 
-## The `≈` termination in `GaussReduce`
+## The `≈` termination in `gauss_reduce`
 
 Termination of the Gauss inner loop is governed by:
 

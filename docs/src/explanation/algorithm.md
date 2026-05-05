@@ -23,7 +23,7 @@ The implementation is three nested algorithmic layers.
 For an informal introduction to this step, see the Wikipedia article on
 [lattice reduction](https://en.wikipedia.org/wiki/Lattice_reduction).
 
-[`GaussReduce(U, V)`](@ref) is the classical Gauss–Lagrange algorithm
+[`gauss_reduce(U, V)`](@ref) is the classical Gauss–Lagrange algorithm
 — an iterated-Euclidean-style reduction of a pair of lattice vectors.
 The loop body is:
 
@@ -51,7 +51,7 @@ See
 
 ## Layer 2: shortening `W` against a 2D sublattice
 
-[`shortenW_in_UVW(U, V, W)`](@ref MinkowskiReduction.shortenW_in_UVW)
+[`shorten_w_in_uvw(U, V, W)`](@ref MinkowskiReduction.shorten_w_in_uvw)
 is the core 3D step. Given three basis vectors, it:
 
 1. Gauss-reduces the `(U, V)` pair.
@@ -86,12 +86,12 @@ when `U` and `V` are parallel, which is checked for and raises
 
 ## Layer 3: the outer loop
 
-[`minkReduce`](@ref) wraps the above in a fixed-point loop:
+[`mink_reduce`](@ref) wraps the above in a fixed-point loop:
 
 ```
 while true
     sort (U, V, W) by norm
-    (U, V, W) = shortenW_in_UVW(U, V, W)
+    (U, V, W) = shorten_w_in_uvw(U, V, W)
     if norm(W) ≥ norm(V) ≥ norm(U): break
 end
 ```
@@ -109,17 +109,17 @@ finitely many steps.
 Nguyen and Stehlé show that for integer inputs of bit-size `B` the
 total number of iterations is `O(B)`, giving **quadratic bit
 complexity** (the same order as Euclid's GCD). The empirical constant
-is ≈ 0.3 iterations/bit: [`DeviousMat(26)`](@ref), a heavily-disguised
+is ≈ 0.3 iterations/bit: [`devious_mat(26)`](@ref), a heavily-disguised
 simple-cubic basis with entries of ~46 bits, converges in exactly 15
 outer iterations.
 
-The `error("Too many iterations")` guard in `minkReduce` sets the cap
+The `error("Too many iterations")` guard in `mink_reduce` sets the cap
 at 29 (iteration 30 raises the exception). That value is derived from two observations: the Nguyen-Stehlé bound
 gives ≈ 20 iterations for the `Int64` worst case (63 bits × 0.3), and
 `Float64` inputs can accumulate a handful of extra iterations from
-off-by-one `floor` rounding in [`shortenW_in_UVW`](@ref
-MinkowskiReduction.shortenW_in_UVW) — see
-[Precision](precision.md#floor-near-integers-in-shortenW_in_UVW-iterations-not-wrongness).
+off-by-one `floor` rounding in [`shorten_w_in_uvw`](@ref
+MinkowskiReduction.shorten_w_in_uvw) — see
+[Precision](precision.md#floor-near-integers-in-shorten_w_in_uvw-iterations-not-wrongness).
 Across 50 000 randomized stress trials the worst observed count was
 23; 29 gives ≈ 10 iterations of headroom without letting a genuine
 bug run silently for long.

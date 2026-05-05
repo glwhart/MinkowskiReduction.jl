@@ -10,19 +10,19 @@ end
 
 Short, self-contained recipes for common tasks. Each assumes you have
 already done the [tutorial](tutorial.md) and know the basic shape of
-`minkReduce`'s return value. Pick the recipe you need; there is no
+`mink_reduce`'s return value. Pick the recipe you need; there is no
 order.
 
 ---
 
 ## How do I get the integer transform matrix, not just the reduced basis?
 
-The matrix form of `minkReduce` returns both:
+The matrix form of `mink_reduce` returns both:
 
 ```jldoctest howto
 julia> M = [1.0 0 1; 0 1 1; 0 0 1];
 
-julia> R, P = minkReduce(M);
+julia> R, P = mink_reduce(M);
 
 julia> M * P == R
 true
@@ -53,7 +53,7 @@ julia> X_old = [0.1 0.5; 0.2 0.5; 0.3 0.5]        # columns = atomic positions
  0.2  0.5
  0.3  0.5
 
-julia> R, P = minkReduce(M);
+julia> R, P = mink_reduce(M);
 
 julia> X_new = mod.(inv(P) * X_old, 1)            # transform, then wrap into [0, 1)
 3×2 Matrix{Float64}:
@@ -77,27 +77,27 @@ you need them that way.
 ## How do I check whether a basis is already Minkowski reduced?
 
 ```jldoctest howto
-julia> isMinkReduced([1.0 0 0; 0 1 0; 0 0 1])
+julia> is_mink_reduced([1.0 0 0; 0 1 0; 0 0 1])
 true
 ```
 
-There is also a three-vector form `isMinkReduced(U, V, W)`. On a
+There is also a three-vector form `is_mink_reduced(U, V, W)`. On a
 non-reduced input the function returns `false` and also prints which of
 the 12 conditions failed (see
 [The 12 Minkowski conditions](reference/conditions.md)).
 
 The test uses a scale-aware floating-point tolerance — see
-[Explanation → Precision](explanation/precision.md#Scale-aware-tolerance-in-isMinkReduced).
+[Explanation → Precision](explanation/precision.md#Scale-aware-tolerance-in-is_mink_reduced).
 
 ---
 
 ## How do I compute the orthogonality defect?
 
 ```jldoctest howto
-julia> orthogonalityDefect([1.0 0 0; 0 1 0; 0 0 1])   # orthogonal
+julia> orthogonality_defect([1.0 0 0; 0 1 0; 0 0 1])   # orthogonal
 1.0
 
-julia> orthogonalityDefect([1.0 1 0; 1 0 1; 0 1 1])   # FCC conventional basis
+julia> orthogonality_defect([1.0 1 0; 1 0 1; 0 1 1])   # FCC conventional basis
 1.4142135623730954
 ```
 
@@ -110,14 +110,14 @@ bases of the lattice.
 
 ## How do I reduce a 2D sublattice?
 
-Use `GaussReduce` directly. It operates on any pair of vectors — the
+Use `gauss_reduce` directly. It operates on any pair of vectors — the
 vectors can themselves live in 3D, which is useful for reducing an
 in-plane sublattice of a crystal (e.g. for a slab calculation):
 
 ```jldoctest howto
 julia> U = [5.0, 8.0, 0.0]; V = [8.0, 13.0, 0.0];
 
-julia> a, b, P = GaussReduce(U, V);
+julia> a, b, P = gauss_reduce(U, V);
 
 julia> (a, b)
 ([0.0, -1.0, 0.0], [-1.0, 0.0, 0.0])
@@ -128,7 +128,7 @@ true
 
 The return is `(shorter, longer, 2×2 integer transform)`. See
 [Explanation → Algorithm](explanation/algorithm.md) for why Gauss
-reduction is the engine behind `minkReduce`.
+reduction is the engine behind `mink_reduce`.
 
 ---
 
@@ -136,14 +136,14 @@ reduction is the engine behind `minkReduce`.
 
 For a small `P` with entries of magnitude ~1, `abs(det(P)) ≈ 1` via
 Float64 is exact. This will be the case for most materials science problems. For pathological `P` (e.g. when reducing a heavily skewed
-cell — see [`DeviousMat`](@ref)), Float64's `det` loses precision and
+cell — see [`devious_mat`](@ref)), Float64's `det` loses precision and
 can return a number far from `1.0` even though the true value is
 exactly `1`. Use `BigInt` for an exact check:
 
 ```jldoctest howto
-julia> M = DeviousMat(26);
+julia> M = devious_mat(26);
 
-julia> R, P = minkReduce(M);
+julia> R, P = mink_reduce(M);
 
 julia> abs(det(BigInt.(P))) == 1
 true
@@ -158,17 +158,17 @@ for why this matters.
 
 Three utilities ship with the package:
 
-- [`RandUnimodMat3(k)`](@ref) — a random `3×3` integer matrix with
+- [`rand_unimod_mat3(k)`](@ref) — a random `3×3` integer matrix with
   `|det| = 1`. Larger `k` produces larger entries.
-- [`DeviousMat(n)`](@ref) — a heavily-disguised simple-cubic basis,
+- [`devious_mat(n)`](@ref) — a heavily-disguised simple-cubic basis,
   the worst-case 3D input for the reducer. Bounded by `3 ≤ n ≤ 26`;
   larger `n` silently overflows `Int64`.
-- `FibonacciMat(k)` (unexported) — an ill-conditioned 2D matrix with
+- `fibonacci_mat(k)` (unexported) — an ill-conditioned 2D matrix with
   consecutive Fibonacci numbers as entries. Overflows around
   `k ≈ 92`. Used in some unit tests.
 
 ```jldoctest howto
-julia> M = RandUnimodMat3(5);
+julia> M = rand_unimod_mat3(5);
 
 julia> size(M)
 (3, 3)
@@ -176,7 +176,7 @@ julia> size(M)
 julia> abs(det(BigInt.(M))) == 1
 true
 
-julia> size(DeviousMat(26))
+julia> size(devious_mat(26))
 (3, 3)
 ```
 
@@ -184,18 +184,18 @@ julia> size(DeviousMat(26))
 
 ## How do I handle linearly-dependent input?
 
-`minkReduce` and `GaussReduce` detect linear dependence by watching for
+`mink_reduce` and `gauss_reduce` detect linear dependence by watching for
 `NaN` norms during the iteration and raise `ErrorException`:
 
 ```jldoctest howto
 julia> U = [2.0, 0, 0]; V = [0.0, 2, 0]; W = U + V;  # W lies in U-V plane
 
 julia> try
-           minkReduce(U, V, W)
+           mink_reduce(U, V, W)
        catch e
            e.msg
        end
-"GaussReduce: input vectors are linearly dependent"
+"gauss_reduce: input vectors are linearly dependent"
 ```
 
 In practice this fires when the input is mathematically degenerate **or

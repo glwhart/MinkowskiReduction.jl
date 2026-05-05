@@ -6,7 +6,7 @@ CurrentModule = MinkowskiReduction
 
 A basis `{U, V, W}` of a 3D lattice is **Minkowski reduced** if and
 only if all twelve of the following inequalities hold. These are the
-conditions checked by [`isMinkReduced`](@ref), tested in the order
+conditions checked by [`is_mink_reduced`](@ref), tested in the order
 listed below.
 
 For *why* these twelve conditions are sufficient (and why none of them
@@ -16,18 +16,18 @@ are redundant), see [Explanation → Algorithm](../explanation/algorithm.md).
 
 | # | Inequality             | What it rules out                      | Enforced by                                       |
 |---|------------------------|----------------------------------------|---------------------------------------------------|
-| 1 | `‖U‖ ≤ ‖V‖`            | Mis-ordering of U and V                | Outer sort in `minkReduce`                        |
-| 2 | `‖V‖ ≤ ‖W‖`            | Mis-ordering of V and W                | Outer sort in `minkReduce`                        |
-| 3 | `‖V‖ ≤ ‖U + V‖`        | V reducible by subtracting U           | `GaussReduce`                                     |
-| 4 | `‖V‖ ≤ ‖U − V‖`        | V reducible by adding U                | `GaussReduce`                                     |
-| 5 | `‖W‖ ≤ ‖U + W‖`        | W reducible by subtracting U           | `shortenW_in_UVW` four-corner step                |
-| 6 | `‖W‖ ≤ ‖U − W‖`        | W reducible by adding U                | `shortenW_in_UVW` four-corner step                |
-| 7 | `‖W‖ ≤ ‖V + W‖`        | W reducible by subtracting V           | `shortenW_in_UVW` four-corner step                |
-| 8 | `‖W‖ ≤ ‖V − W‖`        | W reducible by adding V                | `shortenW_in_UVW` four-corner step                |
-| 9 | `‖W‖ ≤ ‖U + V + W‖`    | W reducible by subtracting U + V       | `shortenW_in_UVW` four-corner step                |
-| 10| `‖W‖ ≤ ‖U − V + W‖`    | W reducible by V − U                   | `shortenW_in_UVW` four-corner step                |
-| 11| `‖W‖ ≤ ‖U + V − W‖`    | W reducible by adding U + V            | `shortenW_in_UVW` four-corner step                |
-| 12| `‖W‖ ≤ ‖U − V − W‖`    | W reducible by U − V                   | `shortenW_in_UVW` four-corner step                |
+| 1 | `‖U‖ ≤ ‖V‖`            | Mis-ordering of U and V                | Outer sort in `mink_reduce`                        |
+| 2 | `‖V‖ ≤ ‖W‖`            | Mis-ordering of V and W                | Outer sort in `mink_reduce`                        |
+| 3 | `‖V‖ ≤ ‖U + V‖`        | V reducible by subtracting U           | `gauss_reduce`                                     |
+| 4 | `‖V‖ ≤ ‖U − V‖`        | V reducible by adding U                | `gauss_reduce`                                     |
+| 5 | `‖W‖ ≤ ‖U + W‖`        | W reducible by subtracting U           | `shorten_w_in_uvw` four-corner step                |
+| 6 | `‖W‖ ≤ ‖U − W‖`        | W reducible by adding U                | `shorten_w_in_uvw` four-corner step                |
+| 7 | `‖W‖ ≤ ‖V + W‖`        | W reducible by subtracting V           | `shorten_w_in_uvw` four-corner step                |
+| 8 | `‖W‖ ≤ ‖V − W‖`        | W reducible by adding V                | `shorten_w_in_uvw` four-corner step                |
+| 9 | `‖W‖ ≤ ‖U + V + W‖`    | W reducible by subtracting U + V       | `shorten_w_in_uvw` four-corner step                |
+| 10| `‖W‖ ≤ ‖U − V + W‖`    | W reducible by V − U                   | `shorten_w_in_uvw` four-corner step                |
+| 11| `‖W‖ ≤ ‖U + V − W‖`    | W reducible by adding U + V            | `shorten_w_in_uvw` four-corner step                |
+| 12| `‖W‖ ≤ ‖U − V − W‖`    | W reducible by U − V                   | `shorten_w_in_uvw` four-corner step                |
 
 ## Interpretation
 
@@ -44,12 +44,12 @@ are redundant), see [Explanation → Algorithm](../explanation/algorithm.md).
 
 Conditions 5–12 are collectively equivalent to: *`W` is the shortest
 element of its coset in `L / (ℤU + ℤV)`*, which is what
-[`shortenW_in_UVW`](@ref MinkowskiReduction.shortenW_in_UVW) enforces
+[`shorten_w_in_uvw`](@ref MinkowskiReduction.shorten_w_in_uvw) enforces
 in one algorithmic step.
 
 ## Tolerance
 
-The inequalities are strict (`≤`) but [`isMinkReduced`](@ref) tests
+The inequalities are strict (`≤`) but [`is_mink_reduced`](@ref) tests
 them up to a floating-point tolerance that scales with the largest
 norm:
 
@@ -60,7 +60,7 @@ norm(V) > norm(W) + tol  &&  return false  # for example
 
 A bare `eps()` would be too tight for lattices whose norms are much
 larger than 1 and too loose for lattices with very small norms. See
-[Explanation → Precision](../explanation/precision.md#Scale-aware-tolerance-in-isMinkReduced).
+[Explanation → Precision](../explanation/precision.md#Scale-aware-tolerance-in-is_mink_reduced).
 
 ## Non-uniqueness and equality cases
 

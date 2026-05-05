@@ -33,7 +33,7 @@ basis for the lattice.
 This theorem holds in dimensions ≤ 4. In dimensions ≥ 5 the
 successive minima may not be attainable by any single basis, and the
 greedy algorithm of [Nguyen & Stehlé](algorithm.md) can fail to even
-find `λ₁`. This package is specialized to three-dimensional lattices and this dimensional limitation is irrelevant. (Reduction of two-dimensional lattices is rather trivial and is also included, via `GaussReduce`.)
+find `λ₁`. This package is specialized to three-dimensional lattices and this dimensional limitation is irrelevant. (Reduction of two-dimensional lattices is rather trivial and is also included, via `gauss_reduce`.)
 
 ## Orthogonality defect
 
@@ -48,7 +48,7 @@ basis is exactly orthogonal. For skewed bases, `δ` grows without bound as
 the basis becomes more ill-conditioned. A Minkowski-reduced basis
 minimises `δ` over all bases of the lattice.
 
-[`orthogonalityDefect`](@ref) computes this. Representative values:
+[`orthogonality_defect`](@ref) computes this. Representative values:
 
 - Simple cubic primitive cell: `δ = 1` exactly.
 - FCC primitive (`a₁₂₃ = {(0,½,½), (½,0,½), (½,½,0)}`): `δ = √2 ≈ 1.414`.

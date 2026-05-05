@@ -18,96 +18,96 @@ end
 
 @testset "MinkowskiReduction.jl" begin
     U=[1, 2, 3];V=[-1, 2, 3];W=[3, 0, 4]
-    # minkReduce now returns (U, V, W, P, n); the original test stripped P out of the tuple.
-    let (Ur, Vr, Wr, _, n) = minkReduce(U, V, W)
+    # mink_reduce now returns (U, V, W, P, n); the original test stripped P out of the tuple.
+    let (Ur, Vr, Wr, _, n) = mink_reduce(U, V, W)
         @test all((Ur, Vr, Wr, n) .≈ ([-2.0, 0.0, 0.0], [0.0, -2.0, 1.0], [-1.0, 2.0, 3.0], 2))
     end
-    @test orthogonalityDefect(minkReduce(U,V,W)[1:3]...)≈1.0458250331675945
-    @test orthogonalityDefect(U,V,W)==4.375
+    @test orthogonality_defect(mink_reduce(U,V,W)[1:3]...)≈1.0458250331675945
+    @test orthogonality_defect(U,V,W)==4.375
     fcc = [[1,1,0],[1,0,1],[0,1,1]]
-    @test orthogonalityDefect(fcc...)≈1.4142135623730954
-    @test orthogonalityDefect(hcat(fcc...))≈1.4142135623730954
-    @test orthogonalityDefect(minkReduce(U,V,W)[1:3]...)≈1.0458250331675945
-    @test orthogonalityDefect(hcat([U,V,W]...))==4.375
-    m = DeviousMat(26) # Largest size that doesn't overflow
-    @test abs(det(hcat(minkReduce(m[:,1],m[:,2],m[:,3])[1:3]...)))==1
-    # shortenW_in_UVW now returns (U, V, W, δP); original test pre-dates P.
-    @test all(MinkowskiReduction.shortenW_in_UVW(U,V,W)[1:3] .≈ ([-2.0, 0.0, 0.0], [1.0, 2.0, 3.0], [0.0, -2.0, 1.0]))
-    # DeviousMat stress tests. The reduced basis is a cubic cell (norms all
+    @test orthogonality_defect(fcc...)≈1.4142135623730954
+    @test orthogonality_defect(hcat(fcc...))≈1.4142135623730954
+    @test orthogonality_defect(mink_reduce(U,V,W)[1:3]...)≈1.0458250331675945
+    @test orthogonality_defect(hcat([U,V,W]...))==4.375
+    m = devious_mat(26) # Largest size that doesn't overflow
+    @test abs(det(hcat(mink_reduce(m[:,1],m[:,2],m[:,3])[1:3]...)))==1
+    # shorten_w_in_uvw now returns (U, V, W, δP); original test pre-dates P.
+    @test all(MinkowskiReduction.shorten_w_in_uvw(U,V,W)[1:3] .≈ ([-2.0, 0.0, 0.0], [1.0, 2.0, 3.0], [0.0, -2.0, 1.0]))
+    # devious_mat stress tests. The reduced basis is a cubic cell (norms all
     # 1, |det|=1); the specific sign/permutation depends on rounding
     # details of Float64 arithmetic, so we assert only the lattice-intrinsic
     # invariants. `m * P == R` must hold exactly because P is exact integer.
-    let m = DeviousMat(26), (a, b, c, P, n) = minkReduce(m[:,1], m[:,2], m[:,3])
+    let m = devious_mat(26), (a, b, c, P, n) = mink_reduce(m[:,1], m[:,2], m[:,3])
         @test sort(norm.([a, b, c])) ≈ [1, 1, 1]
-        @test isMinkReduced(a, b, c)
+        @test is_mink_reduced(a, b, c)
         @test abs(det(BigInt.(P))) == 1
         @test m * P == hcat(a, b, c)
         @test 1 ≤ n ≤ 15
     end
-    let m = DeviousMat(20), (a, b, c, P, n) = minkReduce(m[:,1], m[:,2], m[:,3])
+    let m = devious_mat(20), (a, b, c, P, n) = mink_reduce(m[:,1], m[:,2], m[:,3])
         @test sort(norm.([a, b, c])) ≈ [1, 1, 1]
-        @test isMinkReduced(a, b, c)
+        @test is_mink_reduced(a, b, c)
         @test abs(det(BigInt.(P))) == 1
         @test m * P == hcat(a, b, c)
         @test 1 ≤ n ≤ 15
     end
     # These next few are not robust, but testing something that depends on the random number generator is difficult
-    @test det(MinkowskiReduction.RandLowerTri(35))≈1.0
-    @test det(MinkowskiReduction.RandUnimodMat2(4))≈1.0
-    @test det(MinkowskiReduction.RandLowerTri(45))≈1.0
-    @test det(MinkowskiReduction.RandUnimodMat2(6))≈1.0
-    @test (MinkowskiReduction.FibonacciMat(45)==[1836311903 2971215073; 1134903170 1836311903])
-    @test !(U = [1, 2, 9]; V = [-3, 4, 3]; W = [3, 0, 4]; isMinkReduced(U,V,W))
-    @test !(U = [1, 2, 3]; V = [-3, 4, 3]; W = [3, 0, 4]; isMinkReduced(U,V,W))
-    @test !(U = [1, 0, 0]; V = [-1, 0, 1]; W = [3, 0, 4]; isMinkReduced(U,V,W))
-    @test !(U = [1, 2, 3]; V = [-1, 2, 3]; W = [3, 0, 4]; isMinkReduced(U,V,W))
-    @test !(U = [1, 0, 0]; V = [0,-4,-3]; W = [-3, 0, 4]; isMinkReduced(U,V,W))
-    @test !(U = [1, 0, 0]; V = [0, 4, 3]; W = [3, 0, 4]; isMinkReduced(U,V,W))
-    @test !(U = [0, 4, 3]; V = [-5, 0, 0]; W = [3, 0, 4]; isMinkReduced(U,V,W))
-    @test !(U = [1,0,0]; V = [0,1,0]; W = [0,1,-2]; isMinkReduced(U,V,W))
-    @test !(U = [1,0,-2]; V = [-1,1,-2]; W = [0,0,3]; isMinkReduced(U,V,W))
-    @test !(δ=.50;U = [1,0,0]; V = [-.4,1,0]; W = [-δ,-δ,5]; isMinkReduced(U,V,W))
-    @test !(U = [2,0,0]; V = [-.9,2,0]; W = [-1,-1,10]; isMinkReduced(U,V,W))
-    @test !(U = [2,0,0]; V = -[-.9,2,0]; W = [-1,-1,10]; isMinkReduced(U,V,W))
-    @test !(U = -[2,0,0]; V = -[-.9,2,0]; W = [-1,-1,10]; isMinkReduced(U,V,W))
-    @test !(U = -[2,0,0]; V = [-.9,2,0]; W = [-1,-1,10]; isMinkReduced(U,V,W))
-    @test (U = -[2,0,0]; V = [0,2,0]; W = [-1,-1,10]; isMinkReduced(U,V,W))
+    @test det(MinkowskiReduction.rand_lower_tri(35))≈1.0
+    @test det(MinkowskiReduction.rand_unimod_mat2(4))≈1.0
+    @test det(MinkowskiReduction.rand_lower_tri(45))≈1.0
+    @test det(MinkowskiReduction.rand_unimod_mat2(6))≈1.0
+    @test (MinkowskiReduction.fibonacci_mat(45)==[1836311903 2971215073; 1134903170 1836311903])
+    @test !(U = [1, 2, 9]; V = [-3, 4, 3]; W = [3, 0, 4]; is_mink_reduced(U,V,W))
+    @test !(U = [1, 2, 3]; V = [-3, 4, 3]; W = [3, 0, 4]; is_mink_reduced(U,V,W))
+    @test !(U = [1, 0, 0]; V = [-1, 0, 1]; W = [3, 0, 4]; is_mink_reduced(U,V,W))
+    @test !(U = [1, 2, 3]; V = [-1, 2, 3]; W = [3, 0, 4]; is_mink_reduced(U,V,W))
+    @test !(U = [1, 0, 0]; V = [0,-4,-3]; W = [-3, 0, 4]; is_mink_reduced(U,V,W))
+    @test !(U = [1, 0, 0]; V = [0, 4, 3]; W = [3, 0, 4]; is_mink_reduced(U,V,W))
+    @test !(U = [0, 4, 3]; V = [-5, 0, 0]; W = [3, 0, 4]; is_mink_reduced(U,V,W))
+    @test !(U = [1,0,0]; V = [0,1,0]; W = [0,1,-2]; is_mink_reduced(U,V,W))
+    @test !(U = [1,0,-2]; V = [-1,1,-2]; W = [0,0,3]; is_mink_reduced(U,V,W))
+    @test !(δ=.50;U = [1,0,0]; V = [-.4,1,0]; W = [-δ,-δ,5]; is_mink_reduced(U,V,W))
+    @test !(U = [2,0,0]; V = [-.9,2,0]; W = [-1,-1,10]; is_mink_reduced(U,V,W))
+    @test !(U = [2,0,0]; V = -[-.9,2,0]; W = [-1,-1,10]; is_mink_reduced(U,V,W))
+    @test !(U = -[2,0,0]; V = -[-.9,2,0]; W = [-1,-1,10]; is_mink_reduced(U,V,W))
+    @test !(U = -[2,0,0]; V = [-.9,2,0]; W = [-1,-1,10]; is_mink_reduced(U,V,W))
+    @test (U = -[2,0,0]; V = [0,2,0]; W = [-1,-1,10]; is_mink_reduced(U,V,W))
     U = -[2,0,0]; V = [0,2,0]; W=U+V # Linearly dependent basis
-    @test_throws ErrorException minkReduce(U,V,W)
-    @test_throws ErrorException minkReduce(hcat(U,V,W))
+    @test_throws ErrorException mink_reduce(U,V,W)
+    @test_throws ErrorException mink_reduce(hcat(U,V,W))
     U = -[2.,0,0]; V = [0,2.,0]; W=U+V+[0,0,1e-170]
-    @test_throws ErrorException minkReduce(U,V,W)
-    @test_throws ErrorException minkReduce(hcat(U,V,W))
+    @test_throws ErrorException mink_reduce(U,V,W)
+    @test_throws ErrorException mink_reduce(hcat(U,V,W))
     @test (U = -[2.,0,0]; V = [0,2.,0]; W=U+V+[0,0,1e-150];
-           let (a,b,c,_,n) = minkReduce(U,V,W)
+           let (a,b,c,_,n) = mink_reduce(U,V,W)
                (a,b,c,n) == ([0.0, 0.0, 1.0e-150], [-2.0, -0.0, -0.0], [0.0, 2.0, 0.0], 2)
            end)
     @test (U = -[2.,0,0]; V = [0,2.,0]; W=U+V+[0,0,1e-150];
-           minkReduce(hcat(U,V,W))[1] ==
+           mink_reduce(hcat(U,V,W))[1] ==
            hcat([0.0, 0.0, 1.0e-150], [-2.0, -0.0, -0.0], [0.0, 2.0, 0.0]))
     #U = -[2^63-1,0,0]; V = [0,2^63-1,0]; W=U+V+[0,0,1e-150];
-    #@test_throws InexactError minkReduce(U,V,W) # silently overflows with later versions of julia
+    #@test_throws InexactError mink_reduce(U,V,W) # silently overflows with later versions of julia
     for i ∈ 1:100
-        @test isPermutationMatrix(vcat(shuffle!([[1 0 0],[0 1 0],[0 0 1]])...))
+        @test is_permutation_matrix(vcat(shuffle!([[1 0 0],[0 1 0],[0 0 1]])...))
     end
     for i ∈ 1:100
-        @test !isPermutationMatrix(vcat(shuffle!([[1 0 1],[0 1 0],[0 0 1]])...))
-        @test !isPermutationMatrix(vcat(shuffle!([[1 0 0],[0 0 0],[0 0 1]])...))
+        @test !is_permutation_matrix(vcat(shuffle!([[1 0 1],[0 1 0],[0 0 1]])...))
+        @test !is_permutation_matrix(vcat(shuffle!([[1 0 0],[0 0 0],[0 0 1]])...))
     end
     A = [-1.7233692904465637e-9 0.0025000286163305314 0.0024999524070139123; 0.0024999730832105326 2.591951474986415e-8 0.0025000013059337757; 0.0024999629647447772 0.002499967442175358 -1.891891458670977e-8]
     for a ∈ logrange(1e-15,1e15,30)
-        @test isMinkReduced(minkReduce(A*a)[1])
+        @test is_mink_reduced(mink_reduce(A*a)[1])
     end
     for i ∈ 1:10
-        M_transform = RandUnimodMat3(10)
-        @test isMinkReduced(minkReduce(M_transform*A)[1])
+        M_transform = rand_unimod_mat3(10)
+        @test is_mink_reduced(mink_reduce(M_transform*A)[1])
     end
     A = [0.0 0.5 0.5; 0.5 0.0 0.5; 0.5 0.5 0.0]
     for ε ∈ logrange(1e-5,1e-1,10)
         for i ∈ 1:100
             noise = (2*rand(3,3).-1)*ε
-            @test isMinkReduced(minkReduce(A+noise)[1])
-            @test isMinkReduced(minkReduce(hcat(eachcol(A+noise)...))[1])
+            @test is_mink_reduced(mink_reduce(A+noise)[1])
+            @test is_mink_reduced(mink_reduce(hcat(eachcol(A+noise)...))[1])
         end
     end
     # Test of noise levesls for BCC
@@ -115,7 +115,7 @@ end
     for ε ∈ logrange(1e-5,1.1e-1,20)
         for i ∈ 1:100
             noise = (2*rand(3,3).-1)*ε
-            @test isMinkReduced(minkReduce(A+noise)[1])
+            @test is_mink_reduced(mink_reduce(A+noise)[1])
         end
     end
     # Loop over aspect ratios and noise levels for BCC
@@ -126,7 +126,7 @@ end
             A = aspect_ratio*[1.0 1.0 -1.0; 1.0 1.0 1.0; -1.0 1.0 1.0]
             for i ∈ 1:50
                 noise = (2*rand(3,3).-1)*ε
-                @test isMinkReduced(minkReduce(A+noise)[1])
+                @test is_mink_reduced(mink_reduce(A+noise)[1])
             end
         end
     end
@@ -137,7 +137,7 @@ end
             A = aspect_ratio*[0.0 0.5 0.5; 0.5 0.0 0.5; 0.5 0.5 0.0]
             for i ∈ 1:50
                 noise = (2*rand(3,3).-1)*ε
-                @test isMinkReduced(minkReduce(A+noise)[1])
+                @test is_mink_reduced(mink_reduce(A+noise)[1])
             end
         end
     end
@@ -155,21 +155,21 @@ end
         [-0.5 0.5 0.5; 0.5 -0.5 0.5; 0.5 0.5 -0.5],      # BCC
     ]
 
-    # --- 1. minkReduce invariants on random unimodular transforms ------------
+    # --- 1. mink_reduce invariants on random unimodular transforms ------------
     # For each canonical Bravais lattice, apply random unimodular transforms
     # and check: the reduced output satisfies all 12 Minkowski conditions,
     # |det| is preserved, and the orthogonality defect does not increase.
     for A ∈ seed_bases
         for i ∈ 1:50
-            # k=4 keeps entries of RandUnimodMat3 small enough that `det` of
+            # k=4 keeps entries of rand_unimod_mat3 small enough that `det` of
             # the resulting matrix is accurate to machine precision; larger
             # k would exercise the reducer equally well but introduce
             # spurious cancellation error in the reference det itself.
-            M = A * RandUnimodMat3(4)
-            R, P = minkReduce(M)
-            @test isMinkReduced(R)
+            M = A * rand_unimod_mat3(4)
+            R, P = mink_reduce(M)
+            @test is_mink_reduced(R)
             @test isapprox(abs(det(R)), abs(det(M)); rtol = 1e-10)
-            @test orthogonalityDefect(R) ≤ orthogonalityDefect(M) * (1 + 1e-10)
+            @test orthogonality_defect(R) ≤ orthogonality_defect(M) * (1 + 1e-10)
             # Transform matrix invariants (added when P was threaded in):
             # R == M * P, P is integer and unimodular.
             @test eltype(P) <: Integer
@@ -182,13 +182,13 @@ end
     # Reducing an already-reduced basis must be a no-op, and reducing it a
     # second time must yield the identity transform.
     for i ∈ 1:50
-        B, _ = minkReduce(Float64.(RandUnimodMat3(8)))
-        B2, P2 = minkReduce(B)
+        B, _ = mink_reduce(Float64.(rand_unimod_mat3(8)))
+        B2, P2 = mink_reduce(B)
         @test B2 ≈ B
         @test P2 == Matrix{Int}(I, 3, 3)
     end
 
-    # --- 3. GaussReduce (currently has no dedicated tests) -------------------
+    # --- 3. gauss_reduce (currently has no dedicated tests) -------------------
     # 2D Minkowski conditions on output, |det| preservation, idempotence,
     # error on linearly dependent input, and P-matrix invariants.
     for i ∈ 1:100
@@ -197,7 +197,7 @@ end
         (iszero(U) || iszero(V)) && continue
         d = abs(det(hcat(U, V)))
         d == 0 && continue                   # skip linearly dependent inputs
-        short, long, P = GaussReduce(U, V)   # returns (shorter, longer, 2×2 transform)
+        short, long, P = gauss_reduce(U, V)   # returns (shorter, longer, 2×2 transform)
         @test norm(short) ≤ norm(long) + sqrt(eps())
         @test norm(long) ≤ norm(long + short) + sqrt(eps())
         @test norm(long) ≤ norm(long - short) + sqrt(eps())
@@ -208,13 +208,13 @@ end
     end
     # Idempotence on the docstring example; a second call yields the identity
     # transform since the input is already reduced.
-    let (a1, b1, _) = GaussReduce([5, 8], [8, 13])
-        a2, b2, P2 = GaussReduce(a1, b1)
+    let (a1, b1, _) = gauss_reduce([5, 8], [8, 13])
+        a2, b2, P2 = gauss_reduce(a1, b1)
         @test a2 ≈ a1 && b2 ≈ b1
         @test P2 == Matrix{Int}(I, 2, 2)
     end
     # Parallel vectors are detected and raise an error
-    @test_throws ErrorException GaussReduce([1.0, 0, 0], [2.0, 0, 0])
+    @test_throws ErrorException gauss_reduce([1.0, 0, 0], [2.0, 0, 0])
 
     # --- 4. Sign and permutation invariance of the norm multiset -------------
     # Signed permutations of the input columns preserve the lattice, and so
@@ -223,10 +223,10 @@ end
     norm_multiset(M) = sort(norm.(eachcol(M)))
     perms_3 = [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
     for A ∈ seed_bases
-        ref = norm_multiset(minkReduce(A)[1])
+        ref = norm_multiset(mink_reduce(A)[1])
         for p ∈ perms_3, s1 ∈ (-1,1), s2 ∈ (-1,1), s3 ∈ (-1,1)
             Ap = A[:, p] .* reshape([s1, s2, s3], 1, 3)
-            @test norm_multiset(minkReduce(Ap)[1]) ≈ ref
+            @test norm_multiset(mink_reduce(Ap)[1]) ≈ ref
         end
     end
 
@@ -234,9 +234,9 @@ end
     # The algorithm makes only ratio-based decisions, so uniformly scaling
     # the basis must not change how many outer iterations it takes.
     U0, V0, W0 = [1.0, 2, 3], [-1.0, 2, 3], [3.0, 0, 4]
-    _, _, _, _, n_ref = minkReduce(U0, V0, W0)
+    _, _, _, _, n_ref = mink_reduce(U0, V0, W0)
     for α ∈ logrange(1e-8, 1e8, 20)
-        _, _, _, _, n = minkReduce(α*U0, α*V0, α*W0)
+        _, _, _, _, n = mink_reduce(α*U0, α*V0, α*W0)
         @test n == n_ref
     end
 
@@ -290,15 +290,15 @@ end
         # Sanity-check the table entry itself: if this fails, the expected
         # values don't match the primitive basis and the test is useless.
         @test sort(norm.(eachcol(A))) ≈ sort(expected_norms) rtol=1e-12
-        @test orthogonalityDefect(A) ≈ expected_defect rtol=1e-12
+        @test orthogonality_defect(A) ≈ expected_defect rtol=1e-12
         # Reducer must recover those invariants from any skewed basis for
         # the same lattice.
         for i ∈ 1:20
-            M = A * RandUnimodMat3(4)
-            R, P = minkReduce(M)
-            @test isMinkReduced(R)
+            M = A * rand_unimod_mat3(4)
+            R, P = mink_reduce(M)
+            @test is_mink_reduced(R)
             @test sort(norm.(eachcol(R))) ≈ sort(expected_norms) rtol=1e-10
-            @test orthogonalityDefect(R) ≈ expected_defect rtol=1e-10
+            @test orthogonality_defect(R) ≈ expected_defect rtol=1e-10
             @test M * P ≈ R
             @test abs(det(BigInt.(P))) == 1   # exact: det(Float64(P)) loses precision when entries are large
         end
@@ -316,8 +316,8 @@ end
                      [-0.5 0.5 0.5; 0.5 -0.5 0.5; 0.5 0.5 -0.5]]
     for i ∈ 1:100
         A = p_sweep_bases[rand(1:3)]
-        M = A * RandUnimodMat3(rand(1:8))
-        R, P = minkReduce(M)
+        M = A * rand_unimod_mat3(rand(1:8))
+        R, P = mink_reduce(M)
         @test eltype(P) <: Integer
         @test size(P) == (3, 3)
         @test abs(det(BigInt.(P))) == 1
@@ -325,9 +325,9 @@ end
     end
     # Three-vector and matrix forms must agree on P.
     for i ∈ 1:20
-        M = Float64.(RandUnimodMat3(5))
-        U, V, W, P_vec, _ = minkReduce(M[:,1], M[:,2], M[:,3])
-        R_mat, P_mat = minkReduce(M)
+        M = Float64.(rand_unimod_mat3(5))
+        U, V, W, P_vec, _ = mink_reduce(M[:,1], M[:,2], M[:,3])
+        R_mat, P_mat = mink_reduce(M)
         @test P_vec == P_mat
         @test hcat(U, V, W) == R_mat
     end
@@ -335,7 +335,7 @@ end
     # ------------------------------------------------------------------------
     # 8. Pure random Gaussian inputs.
     # All other random tests start from a structured Bravais lattice and apply
-    # a `RandUnimodMat3` (|det| = 1) transform — they exercise lattices with a
+    # a `rand_unimod_mat3` (|det| = 1) transform — they exercise lattices with a
     # discrete, integer-valued underlying structure. Unstructured `randn`
     # inputs cover a different regime: arbitrary determinant, no integer
     # relationship between input and output, no a-priori bound on aspect
@@ -347,7 +347,7 @@ end
     # We use a fixed RNG seed so the test is reproducible across runs but
     # samples a fresh distribution every release. Rare singular draws are
     # filtered by determinant magnitude; pathologically high aspect ratios
-    # may hit minkReduce's 15-iteration cap, in which case the call errors
+    # may hit mink_reduce's 15-iteration cap, in which case the call errors
     # — we count those and require the failure rate to be negligible.
     # ------------------------------------------------------------------------
     @testset "Pure random Gaussian inputs" begin
@@ -363,8 +363,8 @@ end
                 continue
             end
             try
-                R, P = minkReduce(M)
-                @test isMinkReduced(R)
+                R, P = mink_reduce(M)
+                @test is_mink_reduced(R)
                 @test isapprox(abs(det(R)), abs(det(M)); rtol = 1e-8)
                 @test eltype(P) <: Integer
                 @test abs(det(BigInt.(P))) == 1

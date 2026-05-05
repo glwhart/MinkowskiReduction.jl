@@ -17,7 +17,7 @@ This tutorial takes you from a fresh Julia session to a completed
 Minkowski reduction of a three-dimensional lattice. By the end you will
 have:
 
-1. called `minkReduce` on a skewed cubic basis and recovered the
+1. called `mink_reduce` on a skewed cubic basis and recovered the
    orthonormal one,
 2. inspected every element of the function's return value,
 3. verified the change-of-basis relationship `R == M * P`,
@@ -62,7 +62,7 @@ The columns of `M` are the three basis vectors defining the lattice; together th
 same lattice as the orthonormal basis `(e₁, e₂, e₃)`. Reduce it:
 
 ```jldoctest tutorial
-julia> R, P = minkReduce(M);
+julia> R, P = mink_reduce(M);
 
 julia> R
 3×3 Matrix{Float64}:
@@ -74,7 +74,7 @@ julia> R
 `R` is the reduced basis. The algorithm has found the orthonormal basis
 we expected.
 
-## Step 2 — what `minkReduce` returns
+## Step 2 — what `mink_reduce` returns
 
 The matrix form returns a 2-tuple `(R, P)`. `R` is the reduced basis;
 `P` is a 3×3 integer matrix that records **how the reduction got
@@ -121,7 +121,7 @@ there is an alternative entry point:
 ```jldoctest tutorial
 julia> U = [1.0, 0.0, 0.0]; V = [0.0, 1.0, 0.0]; W = [1.0, 1.0, 1.0];
 
-julia> U′, V′, W′, P, n = minkReduce(U, V, W);
+julia> U′, V′, W′, P, n = mink_reduce(U, V, W);
 
 julia> U′, V′, W′
 ([1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0])
@@ -149,7 +149,7 @@ julia> M = [292755045568446  -214311567528244   292755045568445;
            -214311567528244   156886956080403  -214311567528244;
             292755045568445  -214311567528244   292755045568446];
 
-julia> R, _ = minkReduce(M);
+julia> R, _ = mink_reduce(M);
 
 julia> R
 3×3 Matrix{Float64}:
@@ -179,7 +179,7 @@ julia> a2 = [1.5, √3/2, 0.0];
 
 julia> a3 = [0.0, 0.0, √(8/3)];
 
-julia> U, V, W, _, _ = minkReduce(a1, a2, a3);
+julia> U, V, W, _, _ = mink_reduce(a1, a2, a3);
 
 julia> (U, V, W)
 ([0.5, 0.8660254037844386, 0.0], [0.5, -0.8660254037844386, 0.0], [0.0, 0.0, 1.632993161855452])
@@ -192,12 +192,12 @@ has replaced the skewed `a2` with its shorter equivalent
 
 ## Step 6 — verify the output
 
-`isMinkReduced` checks all twelve inequalities that define a
+`is_mink_reduced` checks all twelve inequalities that define a
 Minkowski-reduced basis. It should return `true` for anything
-`minkReduce` produces:
+`mink_reduce` produces:
 
 ```jldoctest tutorial
-julia> isMinkReduced(U, V, W)
+julia> is_mink_reduced(U, V, W)
 true
 ```
 

@@ -21,7 +21,7 @@ algorithm makes no deliberate choice about signs; the output signs
 depend on arithmetic detail and the input.
 
 Observed in practice:
-[`DeviousMat(20)`](@ref) and [`DeviousMat(26)`](@ref) both reduce to
+[`devious_mat(20)`](@ref) and [`devious_mat(26)`](@ref) both reduce to
 the simple cubic lattice, but one returns
 `([0,0,−1], [1,0,0], [0,1,0])` while the other returns
 `([1,0,0], [0,0,−1], [0,−1,0])` — same lattice, different signs and
@@ -33,7 +33,7 @@ When two or three of the successive minima are equal — which is the
 normal case for *every* highly symmetric Bravais lattice (cubic,
 FCC, BCC, hexagonal, tetragonal) — several orderings of the basis
 vectors are all valid Minkowski-reduced bases. The outer-sort step in
-`minkReduce` uses `sortperm`, whose tie-breaking is
+`mink_reduce` uses `sortperm`, whose tie-breaking is
 implementation-defined, and therefore the visible column order
 depends on the precise input and on the Julia version.
 
@@ -62,7 +62,7 @@ to return:
 1. The **multiset of norms** `{‖U‖, ‖V‖, ‖W‖}` — i.e. the three
    successive minima `λ₁, λ₂, λ₃`.
 2. The **orthogonality defect** `‖U‖·‖V‖·‖W‖ / |det|` — see
-   [`orthogonalityDefect`](@ref).
+   [`orthogonality_defect`](@ref).
 3. The **absolute determinant** `|det|`.
 
 These are what to compare when you want to ask "do these two bases
@@ -107,7 +107,7 @@ boundary and the other ambiguities always apply.
 ## Practical implications
 
 - The algorithm is **deterministic** for a given input: running
-  `minkReduce(M)` twice gives the same output. The non-uniqueness is
+  `mink_reduce(M)` twice gives the same output. The non-uniqueness is
   between **different inputs for the same lattice**.
 - Two runs on the same physical structure — say, one before and one
   after a re-labelling of atoms — may give differently-signed or

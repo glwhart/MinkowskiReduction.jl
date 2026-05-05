@@ -1,9 +1,9 @@
 module MinkowskiReduction
 
 using LinearAlgebra, Random
-export GaussReduce, RandUnimodMat2, RandLowerTri, minkReduce, DeviousMat, isMinkReduced, orthogonalityDefect, RandUnimodMat3, isPermutationMatrix
+export gauss_reduce, rand_unimod_mat2, mink_reduce, devious_mat, is_mink_reduced, orthogonality_defect, rand_unimod_mat3, is_permutation_matrix
 """
-    minkReduce(U, V, W)
+    mink_reduce(U, V, W)
 
 Find the shortest equivalent basis of the lattice formed by {`U`, `V`, `W`}.
 
@@ -20,7 +20,7 @@ The reduction is not unique — see `research.md` for discussion of sign,
 permutation, and boundary ambiguities.
 
 ```jldoctest
-julia> U=[1,2,3]; V=[-1,2,3]; W=[3,0,4]; (U′,V′,W′,P,n) = minkReduce(U,V,W);
+julia> U=[1,2,3]; V=[-1,2,3]; W=[3,0,4]; (U′,V′,W′,P,n) = mink_reduce(U,V,W);
 
 julia> (U′, V′, W′, n)
 ([-2.0, 0.0, 0.0], [0.0, -2.0, 1.0], [-1.0, 2.0, 3.0], 2)
@@ -32,9 +32,9 @@ julia> abs(det(P))
 1.0
 ```
 """
-function minkReduce(U, V, W)
+function mink_reduce(U, V, W)
     # Promote to Float64 so that intermediate dot products (which would
-    # overflow Int64 for inputs like `DeviousMat(26)`, whose entries are
+    # overflow Int64 for inputs like `devious_mat(26)`, whose entries are
     # ~10¹⁴) are computed in floating-point. The transform matrix P is
     # tracked separately as exact integer, so this does not affect P's
     # correctness.
@@ -47,27 +47,27 @@ function minkReduce(U, V, W)
         p = sortperm(norms)
         U, V, W = (U, V, W)[p]   # sort vectors into ascending norm order
         P = P[:, p]              #   ...and apply the same permutation to P
-        U, V, W, δP = shortenW_in_UVW(U, V, W)
+        U, V, W, δP = shorten_w_in_uvw(U, V, W)
         P = P * δP
         # The outer loop provably terminates because Σ‖·‖² strictly
         # decreases each non-trivial iteration. This cap only exists to
         # catch true bugs and pathologically-conditioned inputs.
-        # Sizing: DeviousMat(26) — the worst known *integer* input — takes
+        # Sizing: devious_mat(26) — the worst known *integer* input — takes
         # 15 iterations; Nguyen–Stehlé's O(B) bit-complexity result with
         # the empirical 0.3 iters/bit constant gives ≈ 20 for the Int64
         # worst case. Float64 inputs can accumulate a handful of extra
-        # iterations from off-by-one floor() rounding in shortenW_in_UVW;
+        # iterations from off-by-one floor() rounding in shorten_w_in_uvw;
         # 29 gives ≈ 10 iterations of headroom on top of the integer
         # bound. Across 50,000 randomised stress trials, the worst
         # observed count was 23.
-        i > 29 && error("minkReduce: Too many iterations")
+        i > 29 && error("mink_reduce: Too many iterations")
         norm(W) ≥ norm(V) ≥ norm(U) && break
     end
     return U, V, W, P, i
 end
 
 """
-    minkReduce(M)
+    mink_reduce(M)
 
 Find the shortest equivalent basis of the lattice formed by the columns
 of the 3×3 matrix `M`.
@@ -84,7 +84,7 @@ the three-vector form directly if you need it.
 
 # Examples
 ```jldoctest
-julia> M = [1 -1 3; 2 2 0; 3 3 4]; R, P = minkReduce(M);
+julia> M = [1 -1 3; 2 2 0; 3 3 4]; R, P = mink_reduce(M);
 
 julia> R
 3×3 Matrix{Float64}:
@@ -96,13 +96,13 @@ julia> M * P == R
 true
 ```
 """
-function minkReduce(M)
-    U, V, W, P, _ = minkReduce(M[:,1], M[:,2], M[:,3])
+function mink_reduce(M)
+    U, V, W, P, _ = mink_reduce(M[:,1], M[:,2], M[:,3])
     return hcat(U, V, W), P
 end
 
 """
-    shortenW_in_UVW(U, V, W)
+    shorten_w_in_uvw(U, V, W)
 
 Shorten `W` by adding integer combinations of `U` and `V` to it, producing
 the lattice vector of the coset `W + ℤU + ℤV` that is closest to the
@@ -111,7 +111,7 @@ Nguyen and Stehlé.
 
 Returns the 4-tuple `(U′, V′, W′, δP)`, where:
 - `U′, V′` are the Gauss-reduced form of the input `(U, V)` pair (the
-  function calls [`GaussReduce`](@ref) internally; the caller does not
+  function calls [`gauss_reduce`](@ref) internally; the caller does not
   need to pre-reduce them),
 - `W′ = W - aU′ - bV′` for integers `a, b` chosen so that `W′` is the
   shortest vector in that coset,
@@ -130,10 +130,10 @@ pp. 338–357.
 DOI: <https://doi.org/10.1007/978-3-540-24847-7_26> ·
 preprint: <https://perso.ens-lyon.fr/damien.stehle/downloads/lowdim-final.pdf>
 """
-function shortenW_in_UVW(U, V, W)
+function shorten_w_in_uvw(U, V, W)
     # Gauss-reduce the (U, V) pair. P_G is 2×2 integer with
     # [U_new V_new] = [U V] * P_G.
-    U, V, P_G = GaussReduce(U, V)
+    U, V, P_G = gauss_reduce(U, V)
     # Lift P_G to a 3×3 transform that leaves W unchanged.
     δP = Matrix{Int}(I, 3, 3)
     δP[1:2, 1:2] = P_G
@@ -145,9 +145,9 @@ function shortenW_in_UVW(U, V, W)
     rb = ((V⋅W)*(U⋅U) - (U⋅W)*(U⋅V)) / denom
     # Non-finite ratios indicate U ∥ V or numerical underflow in `denom` —
     # i.e. an effectively degenerate 2D sublattice. Raise the same
-    # "linearly dependent" error GaussReduce uses, rather than letting
+    # "linearly dependent" error gauss_reduce uses, rather than letting
     # floor(Int, …) throw an InexactError.
-    (isfinite(ra) && isfinite(rb)) || error("shortenW_in_UVW: U and V are linearly dependent")
+    (isfinite(ra) && isfinite(rb)) || error("shorten_w_in_uvw: U and V are linearly dependent")
     a = floor(Int, ra)
     b = floor(Int, rb)
     W = W - a*U - b*V                                  # move W into the "first quadrant"
@@ -172,7 +172,7 @@ function shortenW_in_UVW(U, V, W)
 end
 
 """
-    GaussReduce(U, V)
+    gauss_reduce(U, V)
 
 Reduce the 2D basis vectors {`U`, `V`} to the shortest equivalent basis,
 using the classical Gauss–Lagrange algorithm (iterated Euclidean-style
@@ -191,7 +191,7 @@ zero.
 
 # Examples
 ```jldoctest
-julia> a, b, P = GaussReduce([5, 8], [8, 13]);
+julia> a, b, P = gauss_reduce([5, 8], [8, 13]);
 
 julia> (a, b)
 ([0.0, -1.0], [-1.0, 0.0])
@@ -200,7 +200,7 @@ julia> hcat([5, 8], [8, 13]) * P == hcat(a, b)
 true
 ```
 """
-function GaussReduce(U, V)
+function gauss_reduce(U, V)
     # Promote to Float64 to avoid Int64 overflow in intermediate dot
     # products; P is tracked separately as exact integer.
     U, V = float(U), float(V)
@@ -217,35 +217,35 @@ function GaussReduce(U, V)
         # Catch this before round(Int, …) throws InexactError, so we raise
         # the same meaningful error as the pre-P-tracking version.
         ratio = (U⋅V) / (U⋅U)
-        isfinite(ratio) || error("GaussReduce: input vectors are linearly dependent")
+        isfinite(ratio) || error("gauss_reduce: input vectors are linearly dependent")
         m = round(Int, ratio)
         V, U = U, V - m*U                             # V ← old U, U ← old V − m·old U
         P = P * [-m 1; 1 0]                           # same column op on P
         i += 1
         if norm(U) > norm(V) || norm(U) ≈ norm(V) break end
-        i > 50 && error("GaussReduce: Too many iterations")
+        i > 50 && error("gauss_reduce: Too many iterations")
     end
     # We return (V, U) = (shorter, longer); swap columns of P to match.
     return V, U, P[:, [2, 1]]
 end
 
 """
-    orthogonalityDefect(a, b, c)
+    orthogonality_defect(a, b, c)
 
 Compute the orthogonality defect of three basis vectors.
 
 # Examples
 ```jldoctest
-julia> orthogonalityDefect([1,1,0],[1,0,1],[0,1,1])
+julia> orthogonality_defect([1,1,0],[1,0,1],[0,1,1])
 1.4142135623730954
 ```
 """
-function orthogonalityDefect(a, b, c)
+function orthogonality_defect(a, b, c)
     return prod(norm.([a,b,c]))/abs((a×b)⋅c)
 end
 
 """
-    orthogonalityDefect(M)
+    orthogonality_defect(M)
 
 Compute the orthogonality defect of the three column vectors of matrix `M`.
 
@@ -257,39 +257,38 @@ julia> M = [1 1 0; 1 0 1; 0 1 1]
  1  0  1
  0  1  1
 
-julia> orthogonalityDefect(M)
+julia> orthogonality_defect(M)
 1.4142135623730954
 ```
 """
-function orthogonalityDefect(M::AbstractMatrix)
+function orthogonality_defect(M::AbstractMatrix)
     size(M, 2) == 3 || error("Matrix must have exactly 3 columns")
-    return orthogonalityDefect(M[:, 1], M[:, 2], M[:, 3])
+    return orthogonality_defect(M[:, 1], M[:, 2], M[:, 3])
 end
 
 """
-    RandUnimodMat2(n)
+    rand_unimod_mat2(n)
 
 Generate a random unimodular (determinant `±1`) 2×2 integer matrix by
 composing `n` random lower-triangular and upper-triangular integer shears.
 
 Larger `n` produces matrices with larger entries and (in combination with
-[`minkReduce`](@ref)) provides stress-test inputs for the 2D Gauss
+[`mink_reduce`](@ref)) provides stress-test inputs for the 2D Gauss
 reduction.
 
-See also: [`RandLowerTri`](@ref), [`FibonacciMat`](@ref),
-[`DeviousMat`](@ref), [`RandUnimodMat3`](@ref).
+See also: [`devious_mat`](@ref), [`rand_unimod_mat3`](@ref).
 """
-function RandUnimodMat2(n)
-    mat = RandLowerTri(1)
+function rand_unimod_mat2(n)
+    mat = rand_lower_tri(1)
     for i ∈ 1:n
-        mat = mat*RandLowerTri(1)
-        mat = mat*transpose(RandLowerTri(1))
+        mat = mat*rand_lower_tri(1)
+        mat = mat*transpose(rand_lower_tri(1))
     end
     return mat
 end
 
 """
-    RandLowerTri(n)
+    rand_lower_tri(n)
 
 Generate a 2×2 lower-triangular integer shear of the form
 
@@ -298,17 +297,18 @@ Generate a 2×2 lower-triangular integer shear of the form
 
 where `k` is drawn uniformly at random from `-n:n`. The result is
 unimodular (determinant = 1) by construction; it is used as a building
-block for [`RandUnimodMat2`](@ref).
+block for [`rand_unimod_mat2`](@ref).
 
-See also: [`RandUnimodMat2`](@ref), [`FibonacciMat`](@ref),
-[`DeviousMat`](@ref).
+This helper is unexported; access it as `MinkowskiReduction.rand_lower_tri`.
+
+See also: [`rand_unimod_mat2`](@ref), [`devious_mat`](@ref).
 """
-function RandLowerTri(n)
+function rand_lower_tri(n)
     return [1 0; rand(-n:n) 1]
 end
 
 """
-    FibonacciMat(k)
+    fibonacci_mat(k)
 
 Generate a 2×2 matrix `[f2 f3; f1 f2]` whose entries are three
 consecutive Fibonacci numbers (approximated via the closed-form Binet
@@ -320,18 +320,18 @@ makes it a hard stress-test for 2D Gauss reduction.
 entries and more extreme ill-conditioning. The function errors on
 `Int64` overflow, which occurs around `k ≈ 92`.
 
-See also: [`RandUnimodMat2`](@ref), [`DeviousMat`](@ref).
+See also: [`rand_unimod_mat2`](@ref), [`devious_mat`](@ref).
 """
-function FibonacciMat(k)
+function fibonacci_mat(k)
     f1 = round(Int64,1.61803398875^k/sqrt(5))
     f2 = round(Int64,1.61803398875^(k+1)/sqrt(5))
     f3 = f1 + f2
-    any(i -> i < 1, [f1 f2 f3]) && error("Overflow in FibonacciMat function")
+    any(i -> i < 1, [f1 f2 f3]) && error("Overflow in fibonacci_mat function")
     return [f2 f3; f1 f2]
 end
 
 """
-    DeviousMat(n)
+    devious_mat(n)
 
 Generate a unimodular 3×3 integer matrix that is a heavily disguised
 simple-cubic basis and requires a large number of reduction steps to
@@ -342,16 +342,16 @@ The matrix entries grow like the Pisot number `(2+√3)ⁿ`, so the cost of
 reducing it scales linearly with `n`. Because the entries are stored as
 `Int64`, `n` must satisfy `3 ≤ n ≤ 26`; `n = 27` silently overflows.
 `n = 26` is the largest representable instance and requires exactly 15
-outer iterations of [`minkReduce`](@ref) — the empirical worst case for
-integer inputs. (The cap in `minkReduce` is set higher, to 29, to leave
-headroom for floating-point rounding in `shortenW_in_UVW`.)
+outer iterations of [`mink_reduce`](@ref) — the empirical worst case for
+integer inputs. (The cap in `mink_reduce` is set higher, to 29, to leave
+headroom for floating-point rounding in `shorten_w_in_uvw`.)
 
 (Construction due to Rod Forcade, private communication, Feb 1 2020.)
 
-See also: [`RandUnimodMat3`](@ref), [`FibonacciMat`](@ref).
+See also: [`rand_unimod_mat3`](@ref).
 """
-function DeviousMat(n)
-    n < 3 && error("for DeviousMat, n > 2")
+function devious_mat(n)
+    n < 3 && error("for devious_mat, n > 2")
     u,v = round(Int64,(2+√3)^n/(2*√3)), round(Int64,(2+√3)^n/2)
     a,b = convert(Int64,(u+v+1)/2), -u
     c,d = a-1, v-u
@@ -359,14 +359,14 @@ function DeviousMat(n)
 end
 
 """
-    isMinkReduced(U,V,W)
+    is_mink_reduced(U, V, W)
 
 Check if the basis {`U`,`V`,`W`} is Minkowski reduced.
 
 Each of the 12 defining inequalities is checked up to a floating-point
 tolerance that scales with the largest of ‖U‖, ‖V‖, or ‖W‖.
 """
-function isMinkReduced(U,V,W)
+function is_mink_reduced(U,V,W)
     # Factor of 8 covers ~6 units-in-the-last-place (ULPs) of accumulated
     # floating-point error in norm computations after the reduction iterations
     # (observed worst case on the hexagonal lattice boundary, where ‖V‖ = ‖U±V‖ exactly).
@@ -387,18 +387,18 @@ function isMinkReduced(U,V,W)
 end
 
 """
-    isMinkReduced(M)
+    is_mink_reduced(M)
 
 Check if the basis formed by the columns of the 3×3 matrix `M` is
 Minkowski reduced. Convenience wrapper around
-[`isMinkReduced(U,V,W)`](@ref).
+[`is_mink_reduced(U, V, W)`](@ref).
 """
-function isMinkReduced(M)
-    return isMinkReduced(M[:,1],M[:,2],M[:,3])
+function is_mink_reduced(M)
+    return is_mink_reduced(M[:,1],M[:,2],M[:,3])
 end
 
 """
-    RandUnimodMat3(k=10)
+    rand_unimod_mat3(k=10)
 
 Generate a random `3×3` unimodular matrix (determinant `±1`).
 
@@ -418,7 +418,7 @@ Larger values of `k` will typically lead to matrices with larger
 
 # Examples
 ```jldoctest
-julia> M = RandUnimodMat3();
+julia> M = rand_unimod_mat3();
 
 julia> size(M)
 (3, 3)
@@ -427,8 +427,8 @@ julia> abs(det(BigInt.(M))) == 1   # exact unimodularity; Float64 det can drift 
 true
 ```
 """
-function RandUnimodMat3(k::Integer = 10)
-    k < 1 && error("RandUnimodMat3: k must be positive")
+function rand_unimod_mat3(k::Integer = 10)
+    k < 1 && error("rand_unimod_mat3: k must be positive")
     M = Matrix{Int64}(I, 3, 3)
 
     for _ in 1:k
@@ -463,7 +463,7 @@ function RandUnimodMat3(k::Integer = 10)
 end
 
 """
-    isPermutationMatrix(M; atol=√eps()) -> Bool
+    is_permutation_matrix(M; atol=√eps()) -> Bool
 
 Return `true` if the 3×3 matrix `M` is a (signed) permutation of the identity,
 i.e. each row and each column contains exactly one entry whose absolute value
@@ -475,17 +475,17 @@ rows possibly multiplied by –1, so `det(M) = ±1`.
 
 # Examples
 ```jldoctest
-julia> isPermutationMatrix(Matrix(1.0I, 3, 3))
+julia> is_permutation_matrix(Matrix(1.0I, 3, 3))
 true
 
-julia> isPermutationMatrix([0 1 0; 0 0 1; 1 0 0])  # a permutation matrix
+julia> is_permutation_matrix([0 1 0; 0 0 1; 1 0 0])  # a permutation matrix
 true
 
-julia> isPermutationMatrix([0 -1 0; 0 0 1; -1 0 0]) # signed permutation
+julia> is_permutation_matrix([0 -1 0; 0 0 1; -1 0 0]) # signed permutation
 true
 ```
 """
-function isPermutationMatrix(M::AbstractMatrix{<:Real}; atol = sqrt(eps()))
+function is_permutation_matrix(M::AbstractMatrix{<:Real}; atol = sqrt(eps()))
     # Must be 3×3
     size(M) == (3,3) || return false
 
@@ -504,5 +504,27 @@ function isPermutationMatrix(M::AbstractMatrix{<:Real}; atol = sqrt(eps()))
     end
     return true
 end
+
+# ----------------------------------------------------------------------
+# Deprecation shims (v2.1) — old camelCase / PascalCase names continue to
+# work but emit a depwarn pointing users at the snake_case replacement.
+# Scheduled for removal in v3.0.
+#
+# `@deprecate old new` exports `old` by default. The third-arg `false`
+# keeps a name un-exported (used here for `RandLowerTri`, since item 14
+# of the migration plan opted to drop it from the public surface as part
+# of this release).
+# ----------------------------------------------------------------------
+@deprecate minkReduce          mink_reduce
+@deprecate GaussReduce         gauss_reduce
+@deprecate RandUnimodMat2      rand_unimod_mat2
+@deprecate RandLowerTri        rand_lower_tri        false
+@deprecate DeviousMat          devious_mat
+@deprecate isMinkReduced       is_mink_reduced
+@deprecate orthogonalityDefect orthogonality_defect
+@deprecate RandUnimodMat3      rand_unimod_mat3
+@deprecate isPermutationMatrix is_permutation_matrix
+@deprecate shortenW_in_UVW     shorten_w_in_uvw      false
+@deprecate FibonacciMat        fibonacci_mat         false
 
 end
