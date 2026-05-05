@@ -506,26 +506,4 @@ function is_permutation_matrix(M::AbstractMatrix{<:Real}; atol = sqrt(eps()))
     return true
 end
 
-# ----------------------------------------------------------------------
-# Deprecation shims (v2.1) — old camelCase / PascalCase names continue to
-# work but emit a depwarn pointing users at the snake_case replacement.
-# Scheduled for removal in v3.0.
-#
-# `@deprecate old new` exports `old` by default. The third-arg `false`
-# keeps a name un-exported (used here for `RandLowerTri`, since item 14
-# of the migration plan opted to drop it from the public surface as part
-# of this release).
-# ----------------------------------------------------------------------
-@deprecate minkReduce          mink_reduce
-@deprecate GaussReduce         gauss_reduce
-@deprecate RandUnimodMat2      rand_unimod_mat2
-@deprecate RandLowerTri        rand_lower_tri        false
-@deprecate DeviousMat          devious_mat
-@deprecate isMinkReduced       is_mink_reduced
-@deprecate orthogonalityDefect orthogonality_defect
-@deprecate RandUnimodMat3      rand_unimod_mat3
-@deprecate isPermutationMatrix is_permutation_matrix
-@deprecate shortenW_in_UVW     shorten_w_in_uvw      false
-@deprecate FibonacciMat        fibonacci_mat         false
-
 end
