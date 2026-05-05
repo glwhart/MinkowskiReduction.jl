@@ -73,11 +73,11 @@ end
     @test !(U = -[2,0,0]; V = [-.9,2,0]; W = [-1,-1,10]; is_mink_reduced(U,V,W))
     @test (U = -[2,0,0]; V = [0,2,0]; W = [-1,-1,10]; is_mink_reduced(U,V,W))
     U = -[2,0,0]; V = [0,2,0]; W=U+V # Linearly dependent basis
-    @test_throws ErrorException mink_reduce(U,V,W)
-    @test_throws ErrorException mink_reduce(hcat(U,V,W))
+    @test_throws ArgumentError mink_reduce(U,V,W)
+    @test_throws ArgumentError mink_reduce(hcat(U,V,W))
     U = -[2.,0,0]; V = [0,2.,0]; W=U+V+[0,0,1e-170]
-    @test_throws ErrorException mink_reduce(U,V,W)
-    @test_throws ErrorException mink_reduce(hcat(U,V,W))
+    @test_throws ArgumentError mink_reduce(U,V,W)
+    @test_throws ArgumentError mink_reduce(hcat(U,V,W))
     @test (U = -[2.,0,0]; V = [0,2.,0]; W=U+V+[0,0,1e-150];
            let (a,b,c,_,n) = mink_reduce(U,V,W)
                (a,b,c,n) == ([0.0, 0.0, 1.0e-150], [-2.0, -0.0, -0.0], [0.0, 2.0, 0.0], 2)
@@ -214,7 +214,7 @@ end
         @test P2 == Matrix{Int}(I, 2, 2)
     end
     # Parallel vectors are detected and raise an error
-    @test_throws ErrorException gauss_reduce([1.0, 0, 0], [2.0, 0, 0])
+    @test_throws ArgumentError gauss_reduce([1.0, 0, 0], [2.0, 0, 0])
 
     # --- 4. Sign and permutation invariance of the norm multiset -------------
     # Signed permutations of the input columns preserve the lattice, and so

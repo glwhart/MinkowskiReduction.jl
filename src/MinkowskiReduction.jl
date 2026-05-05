@@ -1,6 +1,6 @@
 module MinkowskiReduction
 
-using LinearAlgebra, Random
+using LinearAlgebra
 export gauss_reduce, rand_unimod_mat2, mink_reduce, devious_mat, is_mink_reduced, orthogonality_defect, rand_unimod_mat3, is_permutation_matrix
 """
     mink_reduce(U, V, W)
@@ -96,7 +96,8 @@ julia> M * P == R
 true
 ```
 """
-function mink_reduce(M)
+@views function mink_reduce(M)
+    size(M) == (3, 3) || throw(DimensionMismatch("mink_reduce: expected a 3×3 matrix, got $(size(M))"))
     U, V, W, P, _ = mink_reduce(M[:,1], M[:,2], M[:,3])
     return hcat(U, V, W), P
 end
@@ -147,7 +148,7 @@ function shorten_w_in_uvw(U, V, W)
     # i.e. an effectively degenerate 2D sublattice. Raise the same
     # "linearly dependent" error gauss_reduce uses, rather than letting
     # floor(Int, …) throw an InexactError.
-    (isfinite(ra) && isfinite(rb)) || error("shorten_w_in_uvw: U and V are linearly dependent")
+    (isfinite(ra) && isfinite(rb)) || throw(ArgumentError("shorten_w_in_uvw: U and V are linearly dependent"))
     a = floor(Int, ra)
     b = floor(Int, rb)
     W = W - a*U - b*V                                  # move W into the "first quadrant"
@@ -185,9 +186,9 @@ Returns a 3-tuple `(a, b, P)`:
 - `P` is a 2×2 integer unimodular matrix recording the change of basis:
   `hcat(a, b) == hcat(U, V) * P`.
 
-Throws an error if the input vectors are linearly dependent (parallel),
-which is detected as NaN norms arising from the recursion's division by
-zero.
+Throws `ArgumentError` if the input vectors are linearly dependent
+(parallel), which is detected as NaN norms arising from the recursion's
+division by zero.
 
 # Examples
 ```jldoctest
@@ -217,12 +218,12 @@ function gauss_reduce(U, V)
         # Catch this before round(Int, …) throws InexactError, so we raise
         # the same meaningful error as the pre-P-tracking version.
         ratio = (U⋅V) / (U⋅U)
-        isfinite(ratio) || error("gauss_reduce: input vectors are linearly dependent")
+        isfinite(ratio) || throw(ArgumentError("gauss_reduce: input vectors are linearly dependent"))
         m = round(Int, ratio)
         V, U = U, V - m*U                             # V ← old U, U ← old V − m·old U
         P = P * [-m 1; 1 0]                           # same column op on P
         i += 1
-        if norm(U) > norm(V) || norm(U) ≈ norm(V) break end
+        (norm(U) > norm(V) || norm(U) ≈ norm(V)) && break
         i > 50 && error("gauss_reduce: Too many iterations")
     end
     # We return (V, U) = (shorter, longer); swap columns of P to match.
@@ -241,7 +242,7 @@ julia> orthogonality_defect([1,1,0],[1,0,1],[0,1,1])
 ```
 """
 function orthogonality_defect(a, b, c)
-    return prod(norm.([a,b,c]))/abs((a×b)⋅c)
+    return prod(norm, (a, b, c)) / abs((a×b)⋅c)
 end
 
 """
@@ -261,8 +262,8 @@ julia> orthogonality_defect(M)
 1.4142135623730954
 ```
 """
-function orthogonality_defect(M::AbstractMatrix)
-    size(M, 2) == 3 || error("Matrix must have exactly 3 columns")
+@views function orthogonality_defect(M::AbstractMatrix)
+    size(M) == (3, 3) || throw(DimensionMismatch("orthogonality_defect: expected a 3×3 matrix, got $(size(M))"))
     return orthogonality_defect(M[:, 1], M[:, 2], M[:, 3])
 end
 
@@ -317,16 +318,17 @@ deliberately ill-conditioned: its columns are nearly parallel, which
 makes it a hard stress-test for 2D Gauss reduction.
 
 `k` selects which Fibonacci triple is used; larger `k` gives larger
-entries and more extreme ill-conditioning. The function errors on
-`Int64` overflow, which occurs around `k ≈ 92`.
+entries and more extreme ill-conditioning. The function throws
+`OverflowError` when the Fibonacci values overflow the platform `Int`,
+which on 64-bit systems happens around `k ≈ 92`.
 
 See also: [`rand_unimod_mat2`](@ref), [`devious_mat`](@ref).
 """
 function fibonacci_mat(k)
-    f1 = round(Int64,1.61803398875^k/sqrt(5))
-    f2 = round(Int64,1.61803398875^(k+1)/sqrt(5))
+    f1 = round(Int, 1.61803398875^k / sqrt(5))
+    f2 = round(Int, 1.61803398875^(k+1) / sqrt(5))
     f3 = f1 + f2
-    any(i -> i < 1, [f1 f2 f3]) && error("Overflow in fibonacci_mat function")
+    any(i -> i < 1, [f1 f2 f3]) && throw(OverflowError("fibonacci_mat: k=$k overflows Int"))
     return [f2 f3; f1 f2]
 end
 
@@ -351,10 +353,10 @@ headroom for floating-point rounding in `shorten_w_in_uvw`.)
 See also: [`rand_unimod_mat3`](@ref).
 """
 function devious_mat(n)
-    n < 3 && error("for devious_mat, n > 2")
-    u,v = round(Int64,(2+√3)^n/(2*√3)), round(Int64,(2+√3)^n/2)
-    a,b = convert(Int64,(u+v+1)/2), -u
-    c,d = a-1, v-u
+    n < 3 && throw(DomainError(n, "devious_mat: requires n ≥ 3"))
+    u, v = round(Int, (2+√3)^n / (2*√3)), round(Int, (2+√3)^n / 2)
+    a, b = (u + v + 1) ÷ 2, -u
+    c, d = a - 1, v - u
     return [a b c; b d b; c b a]
 end
 
@@ -364,25 +366,28 @@ end
 Check if the basis {`U`,`V`,`W`} is Minkowski reduced.
 
 Each of the 12 defining inequalities is checked up to a floating-point
-tolerance that scales with the largest of ‖U‖, ‖V‖, or ‖W‖.
+tolerance that scales with the largest of ‖U‖, ‖V‖, or ‖W‖. When a
+condition fails the function logs a `@debug` message naming which one;
+to see those, set `ENV["JULIA_DEBUG"] = MinkowskiReduction` before
+calling.
 """
-function is_mink_reduced(U,V,W)
+function is_mink_reduced(U, V, W)
     # Factor of 8 covers ~6 units-in-the-last-place (ULPs) of accumulated
     # floating-point error in norm computations after the reduction iterations
     # (observed worst case on the hexagonal lattice boundary, where ‖V‖ = ‖U±V‖ exactly).
     tol = 8 * eps(max(norm(U), norm(V), norm(W)))
-    if norm(U) > norm(V)+tol println("Condition 1 failed"); return false end
-    if norm(V) > norm(W)+tol println("Condition 2 failed"); return false end
-    if norm(V) > norm(U+V)+tol println("Condition 3 failed"); return false end
-    if norm(V) > norm(U-V)+tol println("Condition 4 failed"); return false end
-    if norm(W) > norm(U+W)+tol println("Condition 5 failed"); return false end
-    if norm(W) > norm(U-W)+tol println("Condition 6 failed"); return false end
-    if norm(W) > norm(V+W)+tol println("Condition 7 failed"); return false end
-    if norm(W) > norm(V-W)+tol println("Condition 8 failed"); return false end
-    if norm(W) > norm(U+V+W)+tol println("Condition 9 failed"); return false end
-    if norm(W) > norm(U-V+W)+tol println("Condition 10 failed"); return false end
-    if norm(W) > norm(U+V-W)+tol println("Condition 11 failed"); return false end
-    if norm(W) > norm(U-V-W)+tol println("Condition 12 failed"); return false end
+    norm(U) ≤ norm(V)     + tol || (@debug "Condition 1 failed";  return false)
+    norm(V) ≤ norm(W)     + tol || (@debug "Condition 2 failed";  return false)
+    norm(V) ≤ norm(U+V)   + tol || (@debug "Condition 3 failed";  return false)
+    norm(V) ≤ norm(U-V)   + tol || (@debug "Condition 4 failed";  return false)
+    norm(W) ≤ norm(U+W)   + tol || (@debug "Condition 5 failed";  return false)
+    norm(W) ≤ norm(U-W)   + tol || (@debug "Condition 6 failed";  return false)
+    norm(W) ≤ norm(V+W)   + tol || (@debug "Condition 7 failed";  return false)
+    norm(W) ≤ norm(V-W)   + tol || (@debug "Condition 8 failed";  return false)
+    norm(W) ≤ norm(U+V+W) + tol || (@debug "Condition 9 failed";  return false)
+    norm(W) ≤ norm(U-V+W) + tol || (@debug "Condition 10 failed"; return false)
+    norm(W) ≤ norm(U+V-W) + tol || (@debug "Condition 11 failed"; return false)
+    norm(W) ≤ norm(U-V-W) + tol || (@debug "Condition 12 failed"; return false)
     return true
 end
 
@@ -393,8 +398,9 @@ Check if the basis formed by the columns of the 3×3 matrix `M` is
 Minkowski reduced. Convenience wrapper around
 [`is_mink_reduced(U, V, W)`](@ref).
 """
-function is_mink_reduced(M)
-    return is_mink_reduced(M[:,1],M[:,2],M[:,3])
+@views function is_mink_reduced(M)
+    size(M) == (3, 3) || throw(DimensionMismatch("is_mink_reduced: expected a 3×3 matrix, got $(size(M))"))
+    return is_mink_reduced(M[:, 1], M[:, 2], M[:, 3])
 end
 
 """
@@ -428,17 +434,17 @@ true
 ```
 """
 function rand_unimod_mat3(k::Integer = 10)
-    k < 1 && error("rand_unimod_mat3: k must be positive")
-    M = Matrix{Int64}(I, 3, 3)
+    k < 1 && throw(DomainError(k, "rand_unimod_mat3: k must be ≥ 1"))
+    M = Matrix{Int}(I, 3, 3)
 
-    for _ in 1:k
+    for _ ∈ 1:k
         # ----- Row shear -----
         r1, r2 = rand(1:3, 2)
         while r2 == r1
             r2 = rand(1:3)
         end
         m = rand(-k:k)
-        m == 0 && (m = 1) # ensure a non-zero multiple
+        m = iszero(m) ? 1 : m         # ensure a non-zero multiple
         @inbounds M[r1, :] .+= m .* M[r2, :]
 
         # ----- (Optional) Column shear -----
@@ -448,7 +454,7 @@ function rand_unimod_mat3(k::Integer = 10)
                 c2 = rand(1:3)
             end
             n = rand(-k:k)
-            n == 0 && (n = 1)
+            n = iszero(n) ? 1 : n
             @inbounds M[:, c1] .+= n .* M[:, c2]
         end
     end
@@ -486,21 +492,16 @@ true
 ```
 """
 function is_permutation_matrix(M::AbstractMatrix{<:Real}; atol = sqrt(eps()))
-    # Must be 3×3
-    size(M) == (3,3) || return false
-
-    # Check structure: exactly one (≈) ±1 per row/column, rest ≈0
-    for i in 1:3
-        rowvals = M[i, :]
-        colvals = M[:, i]
-        # Identify entries whose |val| ≈ 1
-        ones_in_row = count(i -> isapprox(abs(rowvals[i]), 1; atol=atol), 1:3)
-        zeros_in_row = count(i -> isapprox(rowvals[i], 0; atol=atol), 1:3)
-        ones_in_col = count(i -> isapprox(abs(colvals[i]), 1; atol=atol), 1:3)
-        zeros_in_col = count(i -> isapprox(colvals[i], 0; atol=atol), 1:3)
-        if !(ones_in_row == 1 && zeros_in_row == 2 && ones_in_col == 1 && zeros_in_col == 2)
-            return false
-        end
+    size(M) == (3, 3) || return false
+    for i ∈ 1:3
+        row = @view M[i, :]
+        col = @view M[:, i]
+        ones_in_row  = count(j -> isapprox(abs(row[j]), 1; atol=atol), 1:3)
+        zeros_in_row = count(j -> isapprox(row[j], 0;     atol=atol), 1:3)
+        ones_in_col  = count(j -> isapprox(abs(col[j]), 1; atol=atol), 1:3)
+        zeros_in_col = count(j -> isapprox(col[j], 0;     atol=atol), 1:3)
+        (ones_in_row == 1 && zeros_in_row == 2 &&
+         ones_in_col == 1 && zeros_in_col == 2) || return false
     end
     return true
 end
